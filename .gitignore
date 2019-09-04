@@ -3,4 +3,5 @@ out*
 .DS_Store
 __pycache__
 russian.pickle
-
+*.pyc
+.vscode

@@ -47,6 +47,13 @@ print("******************")
 def sentence_id(sentence):
     return hashlib.md5(sentence.encode('utf-8')).hexdigest()
 
+
+def lowercase_first(sentence):
+    if len(sentence)>1 and sentence[1].lower() == sentence[1]:
+        return sentence[0].lower() + sentence[1:]
+    else:
+        return sentence
+
 candidate_count = 0
 
 for line in sys.stdin:
@@ -58,7 +65,7 @@ for line in sys.stdin:
             pass
 
         for s in sent_tokenize(line, LANG):
-            s = s[0].lower() + s[1:]
+            s = lowercase_first(s)
             candidates = hyp(s)
 
             if candidates:

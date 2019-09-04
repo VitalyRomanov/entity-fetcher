@@ -1,0 +1,1 @@
+cat to_boris.tsv | grep massachusetts | gawk -F "\t" '{if ($3 > 1) {print}}'

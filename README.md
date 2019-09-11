@@ -1,7 +1,7 @@
 ## Promotion strategy
 
 0. Normalize entities
-0.5 Disambiguate with context
+0.5 Disambiguate with context, with other subconcepts
 1. Unambiguous entites with high count get promoted, rest, receive a confidence score
 2. If there is a confident entity among disambiguations, promote it proportionally to the confidence of the original entity. Score down short entities to avoid bias
 3. Promote ambiguous entities with respect to the proximity to the unambiguous concepts

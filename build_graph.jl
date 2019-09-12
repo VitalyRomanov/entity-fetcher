@@ -1,11 +1,36 @@
 using LightGraphs, MetaGraphs
 using Dates
 using JSON
-using JLD2
+using JLD
+include("LanguageTools.jl")
+
+PARKING_LOT = "parking_lot.txt"
+GRAPH = "graph.jld"
 
 # graph = MetaDiGraph()
 # vertex_index = Dict()
-graph = (mgraph=MetaDiGraph(), index=Dict(), inv_index=Dict())
+
+struct NamedGraph
+    mgraph
+    index
+    inv_index
+end
+
+en_lemm = LanguageTools.load("en_lemma.dict")
+
+if isfile(PARKING_LOT)
+    parking_lot = open(PARKING_LOT, "a")
+else
+    parking_lot = open(PARKING_LOT, "w")
+end
+
+if isfile(GRAPH)
+    # graph = JLD.load(GRAPH, "graph")
+    @load GRAPH graph
+else
+    graph = NamedGraph(MetaDiGraph(), Dict(), Dict())
+    # graph = (mgraph=MetaDiGraph(), index=Dict(), inv_index=Dict())
+end
 
 
 function is_ambiguous(pattern)
@@ -27,7 +52,8 @@ end
 
 
 function normalize(concept)
-    return concept
+    n_concept = join([get(en_lemm, word, word) for word in LanguageTools.tokenize(concept)], " ")
+    return n_concept
 end
 
 
@@ -66,7 +92,7 @@ for line in eachline(stdin)
         pattern = JSON.parse(line)
 
         if is_ambiguous(pattern)
-            nothing
+            write(parking_lot, "$line\n")
         else
             sup = get_super(pattern)[1]
             sup_normal_form = normalize(sup)
@@ -74,7 +100,9 @@ for line in eachline(stdin)
             add_node!(graph, sup)
             add_node!(graph, sup_normal_form)
 
-            # add_new_edge!(graph, (sup, sup_normal_form), "normal")
+            if sup != sup_normal_form
+                add_new_edge!(graph, (sup, sup_normal_form), "normal")
+            end
 
             sub_c = get_sub(pattern)
 
@@ -82,7 +110,9 @@ for line in eachline(stdin)
                 normal_form = normalize(concept)
                 add_node!(graph, concept)
                 add_node!(graph, normal_form)
-                #add_new_edge!(graph, (concept, normal_form), "normal")
+                if concept != normal_form
+                    add_new_edge!(graph, (concept, normal_form), "normal")
+                end
                 add_new_edge!(graph, (sup_normal_form, normal_form), "has_a")
             end
 
@@ -107,8 +137,9 @@ for line in eachline(stdin)
     end
 end
 
-#JLD2.save("graph.jld", "graph", graph)
-#@save "graph.jld2" graph
+# JLD.save(GRAPH, "graph", graph, compress=true)
+close(parking_lot)
+@save GRAPH graph
 exit()
 
 for node in vertices(graph.mgraph)

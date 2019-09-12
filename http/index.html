@@ -22,8 +22,41 @@ line.link {
 
 </style>
 <body>
+<div>   
+<input type="text" name="firstname" id="inputField"><br>
+</div>
 <script src="//d3js.org/d3.v3.min.js"></script>
-<script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<div>
+<script align="center">
+
+var response;
+
+var input = document.getElementById("inputField");
+input.addEventListener("keyup", function(event) {
+  // Number 13 is the "Enter" key on the keyboard
+  if (event.keyCode === 13) {
+    // Cancel the default action, if needed
+    event.preventDefault();
+    // Trigger the button element with a click
+    response = send_request(input.value);
+  }
+  
+}); 
+
+function send_request(keyword){
+  console.log("Requesting: ", keyword)
+  var oReq = new XMLHttpRequest();
+  oReq.open("GET", "http://127.0.0.1:8081/" + keyword);
+  oReq.send();
+  oReq.onreadystatechange = (e) => {
+    response = JSON.parse(oReq.responseText)
+    data.nodes = data.nodes.concat(response.nodes)
+    data.links = data.links.concat(response.links)
+    console.log(data)
+    update()
+  }
+}
 
 var width = 960,
     height = 500,
@@ -52,16 +85,20 @@ d3.json("part.json", function(error, json) {
 
 function update() {
   var nodes = data.nodes;
-  var links = data.links.map(
+  only_names = new Set(nodes.map(n => n.name))
+  relevant_links = data.links.filter(l => only_names.has(l.source) && only_names.has(l.target))
+  // console.log(only_names)
+  // console.log(relevant_links)
+  var links = relevant_links.map(
     function(d){
       no = Object()
-      no.source = nodes.find(el => d.source == el.id);
-      no.target = nodes.find(el => d.target == el.id);
+      no.source = nodes.find(el => d.source == el.name);
+      no.target = nodes.find(el => d.target == el.name);
       return no
     })
 
-    console.log(nodes);
-  console.log(links);
+  //   console.log(nodes);
+  // console.log(links);
 
   // Restart the force layout.
   force
@@ -78,7 +115,7 @@ function update() {
       .attr("class", "link");
 
   // Update nodes.
-  node = node.data(nodes, function(d) { return d.id; });
+  node = node.data(nodes, function(d) { return d.name; });
 
   node.exit().remove();
 
@@ -92,7 +129,7 @@ function update() {
 
   nodeEnter.append("text")
       .attr("dy", ".35em")
-      .text(function(d) { return d.id; });
+      .text(function(d) { return d.name; });
 
   node.select("circle")
       .style("fill", color);
@@ -116,21 +153,22 @@ function color(d) {
 // Toggle children on click.
 function click(d) {
   if (d3.event.defaultPrevented) return; // ignore drag
+  send_request(d.name)
   if (d.children) {
     d._children = d.children;
     d.children = null;
   } else {
-    // d.children = d._children;
-    // d._children = null;
-    d3.json("part2.json", function(error, json) {
-        if (error) throw error;
-        data.nodes = data.nodes.concat(json.nodes);
-        data.links = data.links.concat(json.links);
-        console.log(data);
-        update();
-      });
+    d.children = d._children;
+    d._children = null;
+    // d3.json("part2.json", function(error, json) {
+    //     if (error) throw error;
+    //     data.nodes = data.nodes.concat(json.nodes);
+    //     data.links = data.links.concat(json.links);
+    //     console.log(data);
+    //     update();
+    //   });
   }
-  update();
+  // update();
 }
 
 // Returns a list of all nodes under the root.
@@ -139,7 +177,7 @@ function flatten(root) {
 
   function recurse(node) {
     if (node.children) node.children.forEach(recurse);
-    if (!node.id) node.id = ++i;
+    if (!node.name) node.name = ++i;
     nodes.push(node);
   }
 
@@ -148,4 +186,5 @@ function flatten(root) {
 }
 
 </script>
+</div>
 </body>

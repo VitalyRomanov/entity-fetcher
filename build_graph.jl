@@ -16,6 +16,8 @@ struct NamedGraph
     inv_index
 end
 
+function build_graph()
+
 en_lemm = LanguageTools.load("en_lemma.dict")
 
 if isfile(PARKING_LOT)
@@ -92,7 +94,8 @@ for line in eachline(stdin)
         pattern = JSON.parse(line)
 
         if is_ambiguous(pattern)
-            write(parking_lot, "$line\n")
+            # write(parking_lot, "$line\n")
+            nothing
         else
             sup = get_super(pattern)[1]
             sup_normal_form = normalize(sup)
@@ -131,7 +134,7 @@ for line in eachline(stdin)
         end
     end
 
-    global count = count + 1
+    count = count + 1
     if count % 5000 == 0
         println("$(Dates.now()) Processed $count facts")
     end
@@ -139,42 +142,45 @@ end
 
 # JLD.save(GRAPH, "graph", graph, compress=true)
 close(parking_lot)
-@save GRAPH graph
-exit()
-
-for node in vertices(graph.mgraph)
-    println("$(get_prop(graph.mgraph, node, :name))\t$(get_prop(graph.mgraph, node, :count))")
+return graph
 end
+#@save GRAPH graph
+# JLD.save(GRAPH, "graph", graph, compress=false)
+# exit()
 
-for edge in edges(graph.mgraph)
-    n1 = get_prop(graph.mgraph, edge.src, :name)
-    n2 = get_prop(graph.mgraph, edge.dst, :name)
-    println("$n1\t$n2\t$(get_prop(graph.mgraph, edge, :count)) $(get_prop(graph.mgraph, edge, :type))")
-end
-exit()
+# for node in vertices(graph.mgraph)
+#     println("$(get_prop(graph.mgraph, node, :name))\t$(get_prop(graph.mgraph, node, :count))")
+# end
+
+# for edge in edges(graph.mgraph)
+#     n1 = get_prop(graph.mgraph, edge.src, :name)
+#     n2 = get_prop(graph.mgraph, edge.dst, :name)
+#     println("$n1\t$n2\t$(get_prop(graph.mgraph, edge, :count)) $(get_prop(graph.mgraph, edge, :type))")
+# end
+# exit()
 
 
-vertex_index = Dict()
+# vertex_index = Dict()
 
-add_vertex!(graph, Dict(:count => 1))
-vertex_index["one"] = nv(graph)
-add_vertex!(graph, Dict(:count => 2))
-vertex_index["two"] = nv(graph)
-add_vertex!(graph, Dict(:count => 3))
-vertex_index["three"] = nv(graph)
-add_vertex!(graph, Dict(:count => 4))
-vertex_index["four"] = nv(graph)
+# add_vertex!(graph, Dict(:count => 1))
+# vertex_index["one"] = nv(graph)
+# add_vertex!(graph, Dict(:count => 2))
+# vertex_index["two"] = nv(graph)
+# add_vertex!(graph, Dict(:count => 3))
+# vertex_index["three"] = nv(graph)
+# add_vertex!(graph, Dict(:count => 4))
+# vertex_index["four"] = nv(graph)
 
-set_prop!(graph, vertex_index["four"], :count, 5)
+# set_prop!(graph, vertex_index["four"], :count, 5)
 
-add_edge!(graph, 1, 2, Dict(:type => "normal", :count => 1))
+# add_edge!(graph, 1, 2, Dict(:type => "normal", :count => 1))
 
-for node in vertices(graph)
-    print("$node ")
-    println(props(graph, node))
-end
+# for node in vertices(graph)
+#     print("$node ")
+#     println(props(graph, node))
+# end
 
-for node in edges(graph)
-    print("$node ")
-    println(props(graph, node))
-end
+# for node in edges(graph)
+#     print("$node ")
+#     println(props(graph, node))
+# end

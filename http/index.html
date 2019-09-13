@@ -39,7 +39,10 @@ input.addEventListener("keyup", function(event) {
     // Cancel the default action, if needed
     event.preventDefault();
     // Trigger the button element with a click
-    response = send_request(input.value);
+    console.log("clearing")
+    data.nodes.length = 0
+    data.links.length = 0
+    response = send_request(input.value, true);
   }
   
 }); 
@@ -51,9 +54,10 @@ function send_request(keyword){
   oReq.send();
   oReq.onreadystatechange = (e) => {
     response = JSON.parse(oReq.responseText)
+
     data.nodes = data.nodes.concat(response.nodes)
     data.links = data.links.concat(response.links)
-    console.log(data)
+
     update()
   }
 }
@@ -63,9 +67,9 @@ var width = 960,
     data;
 
 var force = d3.layout.force()
-    .linkDistance(80)
-    .charge(-120)
-    .gravity(.05)
+    .linkDistance(10)
+    .charge(-2500)
+    .gravity(3)
     .size([width, height])
     .on("tick", tick);
 

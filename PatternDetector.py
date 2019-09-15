@@ -84,6 +84,8 @@ en_grammar = r"""
         #       It is pretty impossible to do this with grammars, e.g. 'payments for major companies such as google'
         #       Can try to resolve this using word vectors. What is the concept that is the closest to all subconcepts
         #       For some it is easy to decide: forms of capital -> equity	
+        # 10. Exclude etc
+        # 11. Exclude 'and other'
 
 
 ru_grammar = r"""

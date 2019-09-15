@@ -7,8 +7,16 @@ include("LanguageTools.jl")
 PARKING_LOT = "parking_lot.txt"
 GRAPH = "graph.jld"
 
+NORMAL_TYPE = "normal"
+HAS_A_TYPE = "has_a"
+PATTERN_NEIGH_TYPE = "pattern_neighbour"
+
+
 # graph = MetaDiGraph()
 # vertex_index = Dict()
+
+# TODO
+# 1. Need to capture the scope in which two items are pattern pattern_neighbours
 
 struct NamedGraph
     mgraph
@@ -54,7 +62,7 @@ end
 
 
 function normalize(concept)
-    n_concept = join([get(en_lemm, word, word) for word in LanguageTools.tokenize(concept)], " ")
+    n_concept = join([replace(get(en_lemm, word, word), Regex("[$(LanguageTools.diacritics)]") => "") for word in LanguageTools.tokenize(concept)], " ")
     return n_concept
 end
 
@@ -104,7 +112,7 @@ for line in eachline(stdin)
             add_node!(graph, sup_normal_form)
 
             if sup != sup_normal_form
-                add_new_edge!(graph, (sup, sup_normal_form), "normal")
+                add_new_edge!(graph, (sup, sup_normal_form), NORMAL_TYPE)
             end
 
             sub_c = get_sub(pattern)
@@ -114,9 +122,9 @@ for line in eachline(stdin)
                 add_node!(graph, concept)
                 add_node!(graph, normal_form)
                 if concept != normal_form
-                    add_new_edge!(graph, (concept, normal_form), "normal")
+                    add_new_edge!(graph, (concept, normal_form), NORMAL_TYPE)
                 end
-                add_new_edge!(graph, (sup_normal_form, normal_form), "has_a")
+                add_new_edge!(graph, (sup_normal_form, normal_form), HAS_A_TYPE)
             end
 
             for concept in get_sub(pattern)
@@ -125,7 +133,7 @@ for line in eachline(stdin)
                 for neigh in sub_c
                     neigh_normal_form = normalize(neigh)
                     if neigh_normal_form != normal_form 
-                        add_new_edge!(graph, (normal_form, neigh_normal_form), "pattern_neighbour")
+                        add_new_edge!(graph, (normal_form, neigh_normal_form), PATTERN_NEIGH_TYPE)
                     end
                 end
             end

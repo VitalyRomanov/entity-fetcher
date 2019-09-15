@@ -8,8 +8,9 @@
        {"name": "5"}
    ],
    "links":[
-       {"source": "1", "target": "2", "value": 1},
-       {"source": "1", "target": "5", "value": 1}
+       {"source": "1", "target": "2", "value": 1, "type": "normal", "count": 2},
+       {"source": "1", "target": "5", "value": 1, "type": "has_a", "count": 2},
+       {"source": "3", "target": "5", "value": 1, "type": "pattern_neighbour", "count": 2}
    ],
    "oldlinks":[
        {"source": "1", "target": "3", "value": 1},

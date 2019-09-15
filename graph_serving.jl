@@ -27,7 +27,7 @@ end
 function use_edge(g, e)
     link_type = get_prop(g, e, :type)
     link_count = get_prop(g, e, :count)
-    if link_type != "pattern_neighbour" && link_count > 10 || link_type == "pattern_neighbour" && link_count > 3
+    if link_type != "pattern_neighbour" && link_count > 0 #|| link_type == "pattern_neighbour" && link_count > 0
         return true
     end
     return false

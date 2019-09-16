@@ -62,7 +62,7 @@ end
 
 
 function normalize(concept)
-    n_concept = join([replace(get(en_lemm, word, word), Regex("[$(LanguageTools.diacritics)]") => "") for word in LanguageTools.tokenize(concept)], " ")
+    n_concept = join([LanguageTools.remove_accents(get(en_lemm, word, word)) for word in LanguageTools.tokenize(concept)], " ")
     return n_concept
 end
 

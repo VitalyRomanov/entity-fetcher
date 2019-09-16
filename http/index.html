@@ -152,6 +152,7 @@ function update() {
   var nodes = data.nodes;
   only_names = new Set(nodes.map(n => n.name))
   relevant_links = data.links.filter(l => only_names.has(l.source) && only_names.has(l.target))
+  // relevant_links = relevant_links.filter(l => l.type != "pattern_neighbour")
   // console.log(only_names)
   // console.log(relevant_links)
   var links = relevant_links.map(

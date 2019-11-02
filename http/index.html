@@ -39,7 +39,7 @@ line.link {
 </style>
 <body>
 <div>   
-<input type="text" name="firstname" id="inputField"><br>
+<input type="text" name="firstname" id="inputField"><input type="checkbox" id="delCheck"><br>
 </div>
 <script src="d3.v3.min.js"></script>
 <!-- <script src="//d3js.org/d3.v3.min.js"></script> -->
@@ -70,6 +70,7 @@ function send_request(keyword){
   oReq.open("GET", "http://127.0.0.1:8081/" + keyword);
   oReq.send();
   oReq.onreadystatechange = (e) => {
+    // console.log(oReq.responseText)
     response = JSON.parse(oReq.responseText)
 
     data.nodes = data.nodes.concat(response.nodes)
@@ -87,9 +88,9 @@ var link_color = d3.scale.category20();
 
 
 var force = d3.layout.force()
-    .linkDistance(180)
-    .charge(-1500)
-    .gravity(.5)
+    .linkDistance(60)
+    .charge(-400)
+    .gravity(.05)
     .size([width, height])
     .on("tick", tick);
 
@@ -210,8 +211,8 @@ function tick() {
       .attr("y1", function(d) { return d.source.y; })
       .attr("x2", function(d) { return d.target.x; })
       .attr("y2", function(d) { return d.target.y; })
-      .style("stroke", function(d) {if (d.group==2){return "#1c7cdb4F"} else if (d.group==1){return "#ff49223F"} else return "#ace1dd1F"})
-      .style("stroke-width", function(d) { if (d.weight < 10) {return d.weight / 10 + 0.5} else {return Math.log10(d.weight)} + 0.5; })
+      .style("stroke", function(d) {if (d.group==2){return "#1c7cdb1F"} else if (d.group==1){return "#ff49221F"} else return "#ace1dd1F"})
+      .style("stroke-width", function(d) {return 1})// { if (d.weight < 10) {return d.weight / 10 + 0.5} else {return Math.log10(d.weight)} + 0.5; })
       // .style("stroke", function(d) {return link_color(d.group)})
       // .attr("class", "link")
       // .style("stroke-width", 4)
@@ -230,7 +231,15 @@ function color(d) {
 // Toggle children on click.
 function click(d) {
   if (d3.event.defaultPrevented) return; // ignore drag
-  send_request(d.name)
+  if (document.getElementById("delCheck").checked){
+    send_request(d.name)
+  } else {
+    // console.log(d)
+    // console.log(data.nodes)
+    data.nodes = data.nodes.filter(l => l.name != d.name) 
+    // console.log(data.nodes)
+    update()
+  }
   if (d.children) {
     d._children = d.children;
     d.children = null;

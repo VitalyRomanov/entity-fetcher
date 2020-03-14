@@ -150,7 +150,7 @@ class HyponymDetector:
             # candidates = self.cand_gen(" ".join([token for token, _ in NP.leaves() if token not in articles]))
             candidates = [" ".join([token for token, _ in NP.leaves() if token not in articles])]
 
-        candidates = [" ".join(self.normalize(candidate.split())) for candidate in candidates]
+        # candidates = [" ".join(self.normalize(candidate.split())) for candidate in candidates]
 
         return candidates
 

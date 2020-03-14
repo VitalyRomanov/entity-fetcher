@@ -9,8 +9,11 @@ from nltk.tag.util import untag
 
 from nltk import Tree
 
+from phrase_normalizer import PhraseNormalizer
+
 # TODO
 # 1. Filter terms that definitely cannot be concepts
+# 2. " ".join is known to be slow
 
 articles = set(["a", "the"])
 
@@ -20,6 +23,8 @@ class HyponymDetector:
         self.pattern_map = pattern_map
         self.pattern_detector = PatternDetector(lang, backend='nltk')
         self._morph = None
+
+        self.normalize = PhraseNormalizer(lang)
 
         if lang == "ru":
             # import pymorphy2
@@ -145,6 +150,8 @@ class HyponymDetector:
             # candidates = self.cand_gen(" ".join([token for token, _ in NP.leaves() if token not in articles]))
             candidates = [" ".join([token for token, _ in NP.leaves() if token not in articles])]
 
+        candidates = [" ".join(self.normalize(candidate.split())) for candidate in candidates]
+
         return candidates
 
     def lemmatize_nps(self, NPs):
@@ -183,7 +190,12 @@ if __name__ == "__main__":
     text = "Additional methods for fiat deposits, including credit cards, as well as wire and bank transfers, will be added in the near future"
     text = "Institutionalization is the at-scale participation in the crypto market of banks, broker dealers, exchanges, payment providers, fintechs, and other entities in the global financial services ecosystem."
     pprint(hyp(text))
-        
 
+    hyp_ru = HyponymDetector("ru")
+        
+    pprint(hyp_ru("Кошки такие как слоны и носороги."))
+    pprint(hyp_ru("Кошки, в частности слоны и носороги."))
+    # pprint(hyp_ru("Кошки такие как слоны и носороги."))
+    # pprint(hyp_ru("Кошки такие как слоны и носороги."))
 
     

@@ -73,12 +73,12 @@ for line in sys.stdin:
                     "sent_id": sentence_id(s),
                     "text": s
                 }
-                sentense_bank.write("%s\n" % json.dumps(sentence_record))
+                sentense_bank.write("%s\n" % json.dumps(sentence_record, ensure_ascii=False))
                 recorded_sentences.add(sentence_id)
                 for c in candidates:
 
                     c['sent_id'] = sentence_record['sent_id']
-                    dump_files[c['type']].write("%s\n" % json.dumps(c))
+                    dump_files[c['type']].write("%s\n" % json.dumps(c, ensure_ascii=False))
 
                     candidate_count += 1 
                     if candidate_count % 10000 == 0:

@@ -9,7 +9,7 @@ from nltk.tag.util import untag
 
 from nltk import Tree
 
-from phrase_normalizer import PhraseNormalizer
+from PhraseNormalizer import PhraseNormalizer
 
 # TODO
 # 1. Filter terms that definitely cannot be concepts
@@ -41,12 +41,29 @@ class HyponymDetector:
         else:
             return word
 
+    def refine_pos_tags(self, pattern):
+
+        # TODO
+        # Need to refine POS tags for Russian language
+        # can do this by looking at the POS tags for most of the
+        # main nouns in the pattern and assigning the correct
+        # case and number. Could be problems with this approach.
+        # The most important thing here is to find the correct number {sing, plur}
+        # Same probably needed to resolve compound noun chunks, although,
+        # this is still a work in progress
+
+        # can resolve the followign here as well
+        # бактериальная, вирусная инфекция -> патологический процесс
+        return pattern
+
     def __call__(self, sentence_tokens):
         patterns = self.pattern_detector(sentence_tokens)
 
         candidates = []
 
         for pattern in patterns:
+
+            pattern = self.refine_pos_tags(pattern)
             # pos is position of the superconcept in the future list of concepts
             pos = self.pattern_map.get(pattern.label(), 1) # 1 is invalid
 
@@ -61,14 +78,17 @@ class HyponymDetector:
 
             # def to_str(NP):
             #     return " ".join([token for token, _ in NP.leaves() if token not in articles])
-                
-            super_concept = self.generate_candidates(NPs.pop(pos))    
-            sub_concept = [self.generate_candidates(NP) for NP in NPs]
+
+            super_concept = self.generate_candidates(NPs.pop(pos), pattern.label())
+            sub_concept = [self.generate_candidates(NP, pattern.label()) for NP in NPs if NP.label()[:2] == "NP"]
             fact_group = {
                 "type": pattern.label(),
                 "super": super_concept,
                 "sub": sub_concept
             }
+
+            if len(sub_concept) == 1:
+                continue
 
             candidates.append(fact_group)
 
@@ -112,8 +132,8 @@ class HyponymDetector:
 
 
 
-    def generate_candidates(self, NP):
-        if len(NP.label()) > 3 and NP.label()[:3] == "NP_":
+    def generate_candidates(self, NP, pattern_type):
+        if None: #len(NP.label()) > 3 and NP.label()[:3] == "NP_": #block this branch
             candidates = []
 
             def candidate_iterator():
@@ -147,8 +167,12 @@ class HyponymDetector:
 
         else:
 
-            # candidates = self.cand_gen(" ".join([token for token, _ in NP.leaves() if token not in articles]))
-            candidates = [" ".join([token for token, _ in NP.leaves() if token not in articles])]
+            #### candidates = self.cand_gen(" ".join([token for token, _ in NP.leaves() if token not in articles]))
+            # candidates = [" ".join([token for token, _ in NP.leaves() if token not in articles])]
+            candidates = {
+                "type": NP.label(),
+                "candidates": [" ".join(self.normalize([token for token, _ in NP.leaves() if token not in articles], NP.label()))]
+            }
 
         # candidates = [" ".join(self.normalize(candidate.split())) for candidate in candidates]
 
@@ -186,15 +210,32 @@ if __name__ == "__main__":
     hyp = HyponymDetector("en")
 
     from pprint import pprint
-    text = "The research will also include the Engineering, the Law School, School of Information, and other colleges or programs."
-    text = "Additional methods for fiat deposits, including credit cards, as well as wire and bank transfers, will be added in the near future"
-    text = "Institutionalization is the at-scale participation in the crypto market of banks, broker dealers, exchanges, payment providers, fintechs, and other entities in the global financial services ecosystem."
-    pprint(hyp(text))
+
+    [pprint(hyp(s)) for s in
+     """The research will also include the Engineering, the Law School, School of Information, and other colleges or programs.
+     Additional methods for fiat deposits, including credit cards, as well as wire and bank transfers, will be added in the near future.
+     Institutionalization is the at-scale participation in the crypto market of banks, broker dealers, exchanges, payment providers, fintechs, and other entities in the global financial services ecosystem.""".split("\n")]
 
     hyp_ru = HyponymDetector("ru")
-        
-    pprint(hyp_ru("Кошки такие как слоны и носороги."))
-    pprint(hyp_ru("Кошки, в частности слоны и носороги."))
+
+    [pprint(hyp_ru(s)) for s in
+    """Северо-восток Сибири и Дальний Восток — регионы преобладания средневысотных горных хребтов, таких как Сихотэ-Алинь, Верхоянский, Черского и т. д. Полуостров Камчатка (здесь находится самый высокий вулкан Евразии Ключевская Сопка (4750 м) и Курильские острова на крайнем востоке — территория вулканов.
+    Помимо деления на ландшафтные зоны, существует деление на физико-географические сектора, которые различаются атмосферной циркуляцией, континентальностью климата и другими характеристиками.
+    По общему согласию государств-участников СНГ было решено рассматривать Российскую Федерацию в качестве государства-продолжателя СССР со всеми вытекающими из этого последствиями, включая переход к Российской Федерации места постоянного члена Совета Безопасности ООН и признание за Российской Федерацией статуса ядерной державы по смыслу Договора о нераспространении ядерного оружия 1968 года.
+    Правительством Ельцина — Гайдара были проведены либерализация розничных цен, либерализация внешней торговли, реорганизация налоговой системы и другие преобразования, радикально изменившие экономическую ситуацию в стране.
+    Является членом значительного числа других международных организаций, включая Совет Европы и ОБСЕ.
+    С российским загранпаспортом можно въехать без визы в 76 государств мира, в 32 государствах можно получить визу автоматически по прибытии, в остальные государства, в том числе в страны Евросоюза, США, Канаду, Великобританию, Китай, Японию и другие страны въездную визу необходимо получать заблаговременно.
+    В последние годы по объёму ВДС в обрабатывающей промышленности Россия обошла такие страны, как Испания, Канада, Мексика, Индонезия (эти страны опережали Россию по состоянию на 2002 год).
+    В Северном районе к основным отраслям относятся добыча угля, нефти, газа, апатитов, никеля и других металлов, а также заготовка леса и ловля рыбы.
+    Русские расселены по территории страны неравномерно: в некоторых регионах, таких как Чечня, составляют менее 2 % населения.
+    Конституция гарантирует «свободу совести, свободу вероисповедания, включая право исповедовать индивидуально или совместно с другими любую религию или не исповедовать никакой, свободно выбирать, иметь и распространять религиозные и иные убеждения и действовать в соответствии с ними».
+    Благодаря созданным научным школам под руководством Курчатова, Королёва и других учёных в СССР было создано ядерное оружие и космонавтика.
+    Представителями русского балета, достигшими мировой славы были такие выдающиеся танцовщики как Матильда Кшесинская, Ольга Спесивцева, Вацлав Нижинский, Анна Павлова, Тамара Карсавина, Джордж Баланчин, положивший начало американскому балету и современному неоклассическому балетному искусству в целом; Марис Лиепа, Галина Уланова, Константин Сергеев, Майя Плисецкая.
+    В Таймырском Долгано-Ненецком районе Красноярского края, в бассейне Нижней Таймыры есть такие объекты как Река Мамонта (названа так в честь находки на ней в 1948 году скелета Таймырского мамонта), Левый Мамонт и озеро Мамонта.
+    Согласно Блутнеру и Хохнаделю, соционика в основном используется в России и странах Восточной Европы, а несколько похожая на неё постъюнговская типология Майерс — Бриггс используется больше в США и Западной Европе, при этом соционика имеет ряд отличий от типологии Майерс — Бриггс, включая наличие теории взаимодействий или отношений между типами.
+    Многие школы соционики утверждают о неполном соответствии типологии Майерс-Бриггс и соционической типологии, однако считают допустимым использование различных дихотомических тестов, включая различные адаптированные версии опросника Майерс-Бриггс, в качестве одного из инструментов, наряду с другими, для определения соционического типа.""".split("\n")]
+    # pprint(hyp_ru("Кошки такие как слоны и носороги."))
+    # pprint(hyp_ru("Кошки, в частности слоны и носороги."))
     # pprint(hyp_ru("Кошки такие как слоны и носороги."))
     # pprint(hyp_ru("Кошки такие как слоны и носороги."))
 

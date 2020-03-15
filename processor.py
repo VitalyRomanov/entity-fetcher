@@ -78,7 +78,7 @@ for line in sys.stdin:
                 for c in candidates:
 
                     c['sent_id'] = sentence_record['sent_id']
-                    dump_files[c['type']].write("%s\n" % json.dumps(c, ensure_ascii=False))
+                    dump_files[c['type'][:2]].write("%s\n" % json.dumps(c, ensure_ascii=False))
 
                     candidate_count += 1 
                     if candidate_count % 10000 == 0:

@@ -1,13 +1,29 @@
 # TODO
 # 1. Make phrase singular - done
 # 2. not all phrases should be singular, need additional classifier
-# 3. currently there is only one rule available to inflect phrases
-#     it does not work in all cases, e.g. "точка зрения"
-# 4. There are a lot of issues with feninine phrases
+# 3. There are a lot of issues with feminine phrases
 
-en_proc_stop_words = {'of', 'in', 'with', 'for', 'on', 'throughout', 'over'}
+# used for compound noun chunks to stop lemmatization
+# after encountering these words
+en_proc_stop_words = {
+    'of',
+    'in',
+    'with',
+    'for',
+    'on',
+    'throughout',
+    'over'
+}
 
-def normalize_en(tokens, type, analyzer):
+def normalize_en(tokens: list[str], type: str, analyzer) -> list[str]:
+    """
+    Performs lemmatization of the entire noun chunk for english language.
+    The goal is to keep the noun chunk coherent.
+    :param tokens: list(str)
+    :param type: type of noun chunk, currently not used
+    :param analyzer: WordNet lemmatizer for english
+    :return: list(str)
+    """
     process = True
     normalized_tokens = []
     for t in tokens:
@@ -24,17 +40,37 @@ def normalize_en(tokens, type, analyzer):
 PROPER_NOUN = {'NOUN'}
 PROPER_ADJ = {'ADJF', 'ADJS'}
 
-def ru_select_proper_parse(parse, pos):
+def ru_select_proper_parse(parse, pos: set[str]):
+    """
+    Select the most appropriate parse according to prior knowledge about
+    the word
+    :param parse: list of pymorphy parses
+    :param pos: set of required properties
+    :return: single most appropriate parse
+    """
     for p in parse:
         if p.tag.POS in pos:
             return p
     return parse[0]
 
-def normalize_ru(tokens, ent_type, analyzer):
+def normalize_ru(tokens: list[str], ent_type: str, analyzer) -> list[str]:
+    """
+    Performs lemmatization of the entire noun chunk for russian language.
+    The goal is to keep the noun chunk coherent
+    :param tokens:
+    :param ent_type: Type of noun chunk, used for different normalization logic.
+    Currently supported: {NP_adj_noun_q, NP_adj_noun, NP_noun_noun_q, NP_noun_noun
+    NP_noun, NP_adj}. If the provided type does not belong to this set, the original
+    tokens are returned.
+    :param analyzer: pymorphy2 analyzer
+    :return: Normalized tokens or original tokens in case the analysis was not successful.
+    """
 
     # TODO
     # probably need to process exceptions for phrases that
     # should remain plural
+    # `gent` phrases seem to be the issue, that will not be resolved 
+    # by better tagging, so need to address it in some other way
 
     if ent_type == "NP_adj_noun_q" or ent_type == "NP_adj_noun":
 
@@ -141,7 +177,12 @@ def normalize_ru(tokens, ent_type, analyzer):
     # return [analyzed_token.word if analyzed_token is not None else token for analyzed_token, token in zip(inflected, tokens)]
 
 class PhraseNormalizer:
-    def __init__(self, lang):
+    def __init__(self, lang: str):
+        """
+        Class that loads models, necessary to perform normalization for
+        noun chunks in english and russian languages.
+        :param lang: language code
+        """
         self.normalizer = None
         self.analyzer = None
 
@@ -154,7 +195,13 @@ class PhraseNormalizer:
             self.analyzer = pymorphy2.MorphAnalyzer()
             self.normalizer = normalize_ru
 
-    def __call__(self, phrase, type):
+    def __call__(self, phrase: list[str], type: str):
+        """
+
+        :param phrase:
+        :param type:
+        :return:
+        """
         if self.normalizer:
             return self.normalizer(phrase, type, self.analyzer)
         else:

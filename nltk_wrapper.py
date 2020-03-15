@@ -58,12 +58,11 @@ en_grammar = r"""
         # 2. handle a variant ’s DONE
         # 3. names do not seem to parse
         # 4. and NP does not process 100% of the time
-        # 5. NP of NP
+        # 5. NP of NP Done
         # 6. Such thing, or no such thing are two antipatterns
         # 7. Incorporate numerals
         #       In addition to relatively young projects, a number of major exchanges have made their choice in favor of Malta, including Binance, OKEx, ZB.com, as well as such famous blockchain projects as TRON, Big One, Cubits, Bitpay and others.
         # 8. Antipatterns
-        #       rid of NP
 
 
 # NP:
@@ -131,8 +130,6 @@ ru_grammar = r"""
             {<NOUN.*>}
         NP_adj:
             {<ADJ.*>}
-        """ + \
-        """
         NP_at:
             {<NP.*><.*_на><NP.*>}
         NP_at:
@@ -165,30 +162,35 @@ def process_apostrof_s(tokens):
 
 RU_POS_FOR_EXPANSION = {'NOUN', 'ADJ'}
 
-def morph_pos(token, analyzer):
+def morph_pos_ru(token: str,
+                 analyzer: pymorphy2.MorphAnalyzer):
+    """
+    Perform morphological alalysis for a token in russian language
+    :param token:
+    :param analyzer:
+    :return:
+    """
     token, pos = token
     p = analyzer.parse(token)[0]
     gend = p.tag.gender if p.tag.gender else "None"
     return f"{pos}_{p.tag.case}_{gend}_{p.tag.number}"
 
 
-def analyze(sent, analyzer):
-
+def rus_analyze_morph(sent: list[tuple[str,str]],
+                      analyzer: pymorphy2.MorphAnalyzer):
+    """
+    Replace pos tags that occur in RU_POS_FOR_EXPANSION with
+    their morphologically enriched versions.
+    :param sent: POS-tagged tokens in NLTK format
+    :param analyzer:
+    :return:
+    """
     for ind in range(len(sent)):
         token, pos = sent[ind]
         if pos in RU_POS_FOR_EXPANSION:
-            sent[ind] = (token, morph_pos(sent[ind], analyzer))
+            sent[ind] = (token, morph_pos_ru(sent[ind], analyzer))
 
     return sent
-    # parsed = [analyzer.parse(p)[0] for p in phrase]
-    # return list(zip(phrase, ["_".join(
-    #     (
-    #         p.tag.POS if p.tag.POS else "None",
-    #         p.tag.case if p.tag.case else "None",
-    #         p.tag.gender if p.tag.gender else "None",
-    #         p.tag.number if p.tag.number else "None"
-    #     )
-    # ) for p in parsed]))
 
 
 class NltkWrapper:
@@ -217,6 +219,7 @@ class NltkWrapper:
     def tokenize(self, sentence):
         tokens = self.tokenizer.tokenize(sentence)
         # tokens = word_tokenize(text=sentence, language=self.lang_name, preserve_line=True)
+        # word tokenize had some issues with tokenizing periods
 
         tokens = process_apostrof_s(tokens)
 
@@ -228,7 +231,7 @@ class NltkWrapper:
         # need to add simple verification rules
         tags = _pos_tag(tokens, tagset, self.tagger, self.tagger_lang)
         if self.lang_code == "ru":
-            tags = analyze(tags, self.morph_analyzer)
+            tags = rus_analyze_morph(tags, self.morph_analyzer)
         return tags
 
     def __call__(self, text):

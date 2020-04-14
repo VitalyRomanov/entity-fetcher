@@ -22,6 +22,25 @@ FEATURES_OF_INTEREST = [
 m = pymorphy2.MorphAnalyzer()
 tagger = _get_tagger('rus')
 
+norm_dict = {
+    'acc': 'accs',
+    'gen': 'gent',
+    'nom': 'nomn',
+    'fem': 'femn',
+    "none": "None",
+    "sym": ".",
+    "punct": ".",
+    "loc": "loct",
+    "ind": "indc",
+    "pass": "pssv",
+    "imp": "impf",
+    "fut": "futr",
+    "dat": "datv",
+    "sconj": "conj",
+    "cconj": "conj",
+    "part": "prt"
+}
+
 def read_conllu(path):
     sentences = parse(open(path).read())
     ss = []
@@ -38,7 +57,10 @@ def read_conllu(path):
             for f in FEATURES_OF_INTEREST:
                 attr_val = getattr(morph_parse.tag, f.lower(), "None")
                 feat.append(attr_val if attr_val else "None")
-            pm_feat.append("_".join([utag] + feat))
+            ff = [utag] + feat
+            ff = list(map(lambda x: norm_dict.get(x.lower(), x.lower()), ff))
+            pm_feat.append("_".join(ff))
+            
 
         gt_feat = []
         for token in sentence:
@@ -48,21 +70,38 @@ def read_conllu(path):
                 feat = [token['feats'].get(f, "None") for f in FEATURES_OF_INTEREST]
             else:
                 feat = ["None"]
-            gt_feat.append("_".join(pos_tag+feat))
+            ff = pos_tag+feat
+            ff = list(map(lambda x: norm_dict.get(x.lower(), x.lower()), ff))
+            gt_feat.append("_".join(ff))
 
         ss.append(list(zip(tokens, pm_feat, gt_feat)))
     return ss
 
 #%%
 # train_sentences = read_conllu(train_path)
-# test_sentences = read_conllu(test_path)
+test_sentences = read_conllu(test_path)
 
-train_sentences = pickle.load(open("syntagrus_train.pkl", "rb"))
-test_sentences = pickle.load(open("syntagrus_test.pkl", "rb"))
+# train_sentences = pickle.load(open("syntagrus_train.pkl", "rb"))
+# test_sentences = pickle.load(open("syntagrus_test.pkl", "rb"))
 
 # pickle.dump(train_sentences, open("syntagrus_train.pkl", "wb"))
 # pickle.dump(test_sentences, open("syntagrus_test.pkl", "wb"))
 # print(test_sentences[:10])
+
+#%%
+total = 0
+pos = 0
+
+for s in test_sentences:
+    for t, feat, targ in s:
+        # for f,s in zip(feat.split("_"), targ.split("_")):
+        #     if f != s:
+        #         print(f,s)
+        if feat == targ:
+            pos += 1
+        total += 1
+
+print(pos, total, pos / total)
 
 #%%
 

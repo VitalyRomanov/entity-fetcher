@@ -3,6 +3,7 @@ from typing import List, Set
 # 1. Make phrase singular - done
 # 2. not all phrases should be singular, need additional classifier
 # 3. There are a lot of issues with feminine phrases
+# 4. Super is always plural
 
 # used for compound noun chunks to stop lemmatization
 # after encountering these words
@@ -178,7 +179,7 @@ def normalize_ru(tokens: List[str], ent_type: str, analyzer) -> List[str]:
     # return [analyzed_token.word if analyzed_token is not None else token for analyzed_token, token in zip(inflected, tokens)]
 
 class PhraseNormalizer:
-    def __init__(self, lang: str):
+    def __init__(self, lang: str, log:bool = False):
         """
         Class that loads models, necessary to perform normalization for
         noun chunks in english and russian languages.
@@ -196,6 +197,10 @@ class PhraseNormalizer:
             self.analyzer = pymorphy2.MorphAnalyzer()
             self.normalizer = normalize_ru
 
+        self.log = log
+        if log:
+            self.log = open("normalizer.log", "a")
+
     def __call__(self, phrase: List[str], type: str):
         """
 
@@ -204,9 +209,13 @@ class PhraseNormalizer:
         :return:
         """
         if self.normalizer:
-            return self.normalizer(phrase, type, self.analyzer)
+            normalized = self.normalizer(phrase, type, self.analyzer)
         else:
-            return phrase
+            normalized = phrase
+
+        if self.log:
+            self.log.write(f"{' '.join(phrase)}\t{' '.join(normalized)}\n")
+        return normalized
 
 if __name__ == "__main__":
     phrases = [

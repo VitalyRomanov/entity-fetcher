@@ -1,6 +1,9 @@
 import pytest
 from PatternDetector import PatternDetector
 
+# TODO
+# How to make this test simpler
+
 en_test_sents = """Beautiful Cats such as lion.
 Cats such as lion and tiger.
 Cats such as lion, tiger, pantera and domestic cat.
@@ -17,6 +20,9 @@ Lions, tigers, panteras and other cats.
 Cats, especially lions.
 Cats, especially lions and tigers.
 Cats, especially lions, tigers and panteras.""".split("\n")
+# 10. Exclude etc
+# 11. Exclude 'and other'
+# add tests for these two
 
 en_test_results = """[Tree('P1', [Tree('NP', [('Beautiful', 'ADJ'), ('Cats', 'NOUN')]), Tree('SRV_such_as', [('such', 'ADJ_such'), ('as', 'ADP_as')]), Tree('NP', [('lion', 'NOUN')])])]
 [Tree('P1', [Tree('NP', [('Cats', 'NOUN')]), Tree('SRV_such_as', [('such', 'ADJ_such'), ('as', 'ADP_as')]), Tree('NP', [('lion', 'NOUN')]), ('and', 'CONJ_and'), Tree('NP', [('tiger', 'NOUN')])])]

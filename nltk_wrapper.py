@@ -17,7 +17,7 @@ never_part_of_NP = set(
      "‘"])
 never_part_of_NP_ru = set(["различные", "различных", "различным", "различными"])
 help_avoiding_NP_ru = ['на', 'качестве', 'том', 'числе', 'под', 'руководством', 'т.', 'д.', 'п.']
-help_avoiding_NP_en = ['Dr', 'dr', 'kind', 'of']
+help_avoiding_NP_en = ['Dr', 'dr', 'kind', 'of', 'etc']
 key_tokens = set(["'s", "of", "in", "with", "for", "on", "over", "throughout"])
 key_tokens.update(en_keywords)
 key_tokens.update(ru_keywords)

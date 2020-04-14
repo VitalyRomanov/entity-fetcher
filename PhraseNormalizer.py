@@ -1,3 +1,4 @@
+from typing import List, Set
 # TODO
 # 1. Make phrase singular - done
 # 2. not all phrases should be singular, need additional classifier
@@ -15,7 +16,7 @@ en_proc_stop_words = {
     'over'
 }
 
-def normalize_en(tokens: list[str], type: str, analyzer) -> list[str]:
+def normalize_en(tokens, type, analyzer):
     """
     Performs lemmatization of the entire noun chunk for english language.
     The goal is to keep the noun chunk coherent.
@@ -40,7 +41,7 @@ def normalize_en(tokens: list[str], type: str, analyzer) -> list[str]:
 PROPER_NOUN = {'NOUN'}
 PROPER_ADJ = {'ADJF', 'ADJS'}
 
-def ru_select_proper_parse(parse, pos: set[str]):
+def ru_select_proper_parse(parse, pos: Set[str]):
     """
     Select the most appropriate parse according to prior knowledge about
     the word
@@ -53,7 +54,7 @@ def ru_select_proper_parse(parse, pos: set[str]):
             return p
     return parse[0]
 
-def normalize_ru(tokens: list[str], ent_type: str, analyzer) -> list[str]:
+def normalize_ru(tokens: List[str], ent_type: str, analyzer) -> List[str]:
     """
     Performs lemmatization of the entire noun chunk for russian language.
     The goal is to keep the noun chunk coherent
@@ -195,7 +196,7 @@ class PhraseNormalizer:
             self.analyzer = pymorphy2.MorphAnalyzer()
             self.normalizer = normalize_ru
 
-    def __call__(self, phrase: list[str], type: str):
+    def __call__(self, phrase: List[str], type: str):
         """
 
         :param phrase:

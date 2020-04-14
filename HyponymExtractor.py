@@ -99,8 +99,6 @@ class HyponymDetector:
             # TODO
             # 1. Improve extraction quality by enumerating additional variants for subconcepts
             # 2. Score candidates with vector proximity or PMI
-            # 3. Generate extra candidates from within single NP Done
-            # 4. Remove articles DONE
 
             # sup_concept_cand = untag(NPs.pop(pos))
             # sup_concept = [sup_concept_cand[ind:] for ind in range(len(sup_concept_cand))]

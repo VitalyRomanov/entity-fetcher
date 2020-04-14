@@ -1,3 +1,4 @@
+from typing import List, Set, Tuple
 from nltk.tokenize import word_tokenize
 from nltk.data import load
 from nltk.tag import _get_tagger, _pos_tag
@@ -54,11 +55,8 @@ en_grammar = r"""
             {<NP><.*_throughout><NP>}
         """
         # TODO:
-        # 1. add 's detection DONE
-        # 2. handle a variant ’s DONE
         # 3. names do not seem to parse
         # 4. and NP does not process 100% of the time
-        # 5. NP of NP Done
         # 6. Such thing, or no such thing are two antipatterns
         # 7. Incorporate numerals
         #       In addition to relatively young projects, a number of major exchanges have made their choice in favor of Malta, including Binance, OKEx, ZB.com, as well as such famous blockchain projects as TRON, Big One, Cubits, Bitpay and others.
@@ -136,11 +134,6 @@ ru_grammar = r"""
             {<NP.*><.*_в><NP.*>}
         """
 
-# TODO:
-# 1. Specify location???
-#    NP_at:
-#       {<NP.*><NOUN_loct.*>{1,}}
-
 
 def process_apostrof_s(tokens):
     # tokens = copy(tokens)
@@ -176,7 +169,7 @@ def morph_pos_ru(token: str,
     return f"{pos}_{p.tag.case}_{gend}_{p.tag.number}"
 
 
-def rus_analyze_morph(sent: list[tuple[str,str]],
+def rus_analyze_morph(sent: List[Tuple[str,str]],
                       analyzer: pymorphy2.MorphAnalyzer):
     """
     Replace pos tags that occur in RU_POS_FOR_EXPANSION with

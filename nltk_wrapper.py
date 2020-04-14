@@ -12,18 +12,19 @@ from copy import copy
 
 from PatternDetector import en_keywords, ru_keywords
 
-never_part_of_NP = set(["which", "thing", "many", "several", "few", "multiple", "all", "“", "”", "alike", "’", "–", "—", "overall", "this", "‘"])
-never_part_of_NP_ru = set(["различные","различных","различным","различными"])
+never_part_of_NP = set(
+    ["which", "thing", "many", "several", "few", "multiple", "all", "“", "”", "alike", "’", "–", "—", "overall", "this",
+     "‘"])
+never_part_of_NP_ru = set(["различные", "различных", "различным", "различными"])
 help_avoiding_NP_ru = ['на', 'качестве', 'том', 'числе', 'под', 'руководством', 'т.', 'д.', 'п.']
 help_avoiding_NP_en = ['Dr', 'dr', 'kind', 'of']
-key_tokens = set(["'s", "of", "in", "with", "for", "on", "over", "throughout"]) 
+key_tokens = set(["'s", "of", "in", "with", "for", "on", "over", "throughout"])
 key_tokens.update(en_keywords)
 key_tokens.update(ru_keywords)
 key_tokens.update(never_part_of_NP)
 key_tokens.update(never_part_of_NP_ru)
 key_tokens.update(help_avoiding_NP_ru)
 key_tokens.update(help_avoiding_NP_en)
-
 
 en_grammar = r"""
         # NP:
@@ -54,17 +55,15 @@ en_grammar = r"""
         NP_throughout:
             {<NP><.*_throughout><NP>}
         """
-        # TODO:
-        # 3. names do not seem to parse
-        # 4. and NP does not process 100% of the time
-        # 6. Such thing, or no such thing are two antipatterns
-        # 7. Incorporate numerals
-        #       In addition to relatively young projects, a number of major exchanges have made their choice in favor of Malta, including Binance, OKEx, ZB.com, as well as such famous blockchain projects as TRON, Big One, Cubits, Bitpay and others.
-        # 8. Antipatterns
+# TODO:
+# 3. names do not seem to parse
+# 4. and NP does not process 100% of the time
+# 6. Such thing, or no such thing are two antipatterns
+# 7. Incorporate numerals
+#       In addition to relatively young projects, a number of major exchanges have made their choice in favor of Malta, including Binance, OKEx, ZB.com, as well as such famous blockchain projects as TRON, Big One, Cubits, Bitpay and others.
+# 8. Antipatterns
 
 
-# NP:
-# { < NOUN | ADJ > * < NOUN. * >}
 ru_grammar = r"""
         SRV_v_tom_chisle:
             {<.*_в><.*_том><.*_числе>}
@@ -135,14 +134,18 @@ ru_grammar = r"""
         """
 
 
-def process_apostrof_s(tokens):
-    # tokens = copy(tokens)
+def process_apostrof_s(tokens: List[str]) -> List[str]:
+    """
+    Merges ["[`|'|‘]","s"] into a single token
+    :param tokens: list of tokens
+    :return: list of tokens with matching tokens merged
+    """
     locations = []
     for ind, token in enumerate(tokens):
         if ind == len(tokens) - 1:
             continue
-        
-        if (token == "`" or token == "’" or token == "‘") and tokens[ind+1] == "s":
+
+        if (token == "`" or token == "’" or token == "‘") and tokens[ind + 1] == "s":
             locations.append(ind)
 
     while locations:
@@ -153,7 +156,9 @@ def process_apostrof_s(tokens):
 
     return tokens
 
+
 RU_POS_FOR_EXPANSION = {'NOUN', 'ADJ'}
+
 
 def morph_pos_ru(token: str,
                  analyzer: pymorphy2.MorphAnalyzer):
@@ -169,7 +174,7 @@ def morph_pos_ru(token: str,
     return f"{pos}_{p.tag.case}_{gend}_{p.tag.number}"
 
 
-def rus_analyze_morph(sent: List[Tuple[str,str]],
+def rus_analyze_morph(sent: List[Tuple[str, str]],
                       analyzer: pymorphy2.MorphAnalyzer):
     """
     Replace pos tags that occur in RU_POS_FOR_EXPANSION with
@@ -189,21 +194,28 @@ def rus_analyze_morph(sent: List[Tuple[str,str]],
 class NltkWrapper:
     def __init__(self, language):
         self.lang_code = language
-        self.lang_name = 'english' if language=='en' else 'russian'
-        self.tagger_lang = 'eng' if language=='en' else 'rus'
 
+        if language == 'en':
+            self.lang_name = 'english'
+            self.tagger_lang = 'eng'
+            grammar = en_grammar
+            self.morph_analyzer = None
+        elif language == 'ru':
+            self.lang_name = 'russian'
+            self.tagger_lang = 'rus'
+            grammar = ru_grammar
+            self.morph_analyzer = pymorphy2.MorphAnalyzer()
+        else:
+            raise NotImplemented(f"Language '{language}' is not supported")
+
+        # Load NLTK models
         self.sent_tokenizer = load('tokenizers/punkt/{0}.pickle'.format(self.lang_name))
         self.tagger = _get_tagger(self.tagger_lang)
+        # Load grammar parser
+        self.grammar_parser = RegexpParser(grammar)
 
-        self.grammar_parser = RegexpParser(en_grammar if language=="en" else ru_grammar)
-
-        if language == "ru":
-            self.morph_analyzer = pymorphy2.MorphAnalyzer()
-
-        # TODO
-        # Parse Links
         self.tokenizer = RegexpTokenizer(
-            "[A-Za-zА-Яа-яё]\.|[A-Za-zА-Яа-яё][A-Za-zА-Яа-яё-]*|[^\w\s]|[0-9]+"
+            "[a-z]+[:.].*?(?=\s)|[A-Za-zА-Яа-яё]\.|[A-Za-zА-Яа-яё][A-Za-zА-Яа-яё-]*|[^\w\s]|[0-9]+"
         )
 
     def sentencize(self, text):
@@ -211,17 +223,10 @@ class NltkWrapper:
 
     def tokenize(self, sentence):
         tokens = self.tokenizer.tokenize(sentence)
-        # tokens = word_tokenize(text=sentence, language=self.lang_name, preserve_line=True)
-        # word tokenize had some issues with tokenizing periods
-
         tokens = process_apostrof_s(tokens)
-
         return tokens
 
     def tag(self, tokens, tagset='universal', lang=None):
-        # TODO
-        # punctuation classified as noun: —
-        # need to add simple verification rules
         tags = _pos_tag(tokens, tagset, self.tagger, self.tagger_lang)
         if self.lang_code == "ru":
             tags = rus_analyze_morph(tags, self.morph_analyzer)
@@ -231,9 +236,6 @@ class NltkWrapper:
         sents = self.sentencize(text)
         t_sents = [self.tokenize(sent) for sent in sents]
         tags = [self.tag(t_sent) for t_sent in t_sents]
-        # from nltk import pos_tag
-
-        # tags = [pos_tag(sent, tagset='universal') for sent in sents]
         return tags
 
     def noun_chunks(self, sentence_text):
@@ -242,17 +244,13 @@ class NltkWrapper:
         for ind, tag in enumerate(tags):
             if tag[0].lower() in key_tokens:
                 tags[ind] = (tags[ind][0], tags[ind][1] + "_" + tags[ind][0].lower())
-        # return [(token, pos, tag) for token, pos, tag in tree2conlltags(self.grammar_parser.parse(tags))]
+
         return self.grammar_parser.parse(tags)
-        # return [[(token, tag) for token, pos, tag in tree2conlltags(self.grammar_parser.parse(tagged_tokens))] for tagged_tokens in tagged_sents]
-        # return [tree2conlltags(self.grammar_parser.parse(tagged_tokens)) for tagged_tokens in tagged_sents]
-
-        # return tree2conlltags(self.grammar_parser.parse(tags))
-        
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     from pprint import pprint
+
     nlp_en = NltkWrapper("en")
     text_en = """
     Alice`s Adventures in Wonderland (commonly shortened to Alice in Wonderland) is an 1865 novel written by English author Charles Lutwidge Dodgson under the pseudonym Lewis Carroll.[1] It tells of a young girl named Alice falling through a rabbit hole into a fantasy world populated by peculiar, anthropomorphic creatures.
@@ -280,7 +278,7 @@ if __name__=="__main__":
     #     else:
     #         print(child)
 
-        # print(child)
+    # print(child)
 
     # for tree in tags_en.subtrees():
     #     if tree.label == "S":
@@ -290,8 +288,8 @@ if __name__=="__main__":
     #             nested = []
     #             nested.append(" ".join([tok for tok, _ in tree.leaves()]))
     #             print(nested)
-            
-            # nested.append([t for t in tree.subtrees() if t.label() == "NP"])
+
+    # nested.append([t for t in tree.subtrees() if t.label() == "NP"])
 
     # all_trees = [tree for tree in tags_en.subtrees() if tree not in nested]
 

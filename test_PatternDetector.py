@@ -1,3 +1,6 @@
+import pytest
+from PatternDetector import PatternDetector
+
 en_test_sents = """Beautiful Cats such as lion.
 Cats such as lion and tiger.
 Cats such as lion, tiger, pantera and domestic cat.
@@ -33,17 +36,13 @@ en_test_results = """[Tree('P1', [Tree('NP', [('Beautiful', 'ADJ'), ('Cats', 'NO
 [Tree('P5', [Tree('NP', [('Cats', 'NOUN')]), (',', '._,'), ('especially', 'ADV_especially'), Tree('NP', [('lions', 'NOUN')]), (',', '._,'), Tree('NP', [('tigers', 'NOUN')]), ('and', 'CONJ_and'), Tree('NP', [('panteras', 'NOUN')])])]""".split(
         "\n")
 
-def test_en_pattern_detector():
-
-    from PatternDetector import PatternDetector
-
-    en_p = PatternDetector('en', backend='nltk')
-
-    for s, r in zip(en_test_sents, en_test_results):
-        print(en_p(s)[0])
-        assert repr(en_p(s)) == r
 
 
+en_p = PatternDetector('en', backend='nltk')
+@pytest.mark.parametrize(('s', 'r'), zip(en_test_sents, en_test_results))
+def test_en_pattern_detector(s, r):
+    p = en_p(s)
+    assert repr(p) == r
 
 
 ru_test_sents = """Кошки такие как слоны и носороги.
@@ -61,18 +60,38 @@ ru_test_results = """[Tree('P1_nomn', [Tree('NP_noun', [('Кошки', 'NOUN_gen
 [Tree('P6', [Tree('NP_noun', [('Кошки', 'NOUN_gent_femn_sing')]), (',', '._,'), Tree('SRV_v_chasnosti', [('в', 'ADP_в'), ('частности', 'NOUN_loct_femn_sing_частности')]), Tree('NP_noun', [('слоны', 'NOUN_nomn_masc_plur')]), ('и', 'CONJ_и'), Tree('NP_noun', [('носороги', 'NOUN_nomn_masc_plur')])])]""".split("\n")
 
 
-def test_ru_pattern_detector():
-
-    from PatternDetector import PatternDetector
-
-    ru_p = PatternDetector('ru', backend='nltk')
-
-    for s, r in zip(ru_test_sents, ru_test_results):
-        print(ru_p(s)[0])
-        assert repr(ru_p(s)) == r
+ru_p = PatternDetector('ru', backend='nltk')
+@pytest.mark.parametrize(('s', 'r'), zip(ru_test_sents, ru_test_results))
+def test_ru_pattern_detector(s, r):
+    p = ru_p(s)
+    assert repr(p) == r
 
 
-if __name__=="__main__":
-    test_en_pattern_detector()
-    print()
-    test_ru_pattern_detector()
+
+
+
+# def test_en_pattern_detector():
+#
+#     from PatternDetector import PatternDetector
+#
+#     en_p = PatternDetector('en', backend='nltk')
+#
+#     for s, r in zip(en_test_sents, en_test_results):
+#         print(en_p(s)[0])
+#         assert repr(en_p(s)) == r
+
+# def test_ru_pattern_detector():
+#
+#     from PatternDetector import PatternDetector
+#
+#     ru_p = PatternDetector('ru', backend='nltk')
+#
+#     for s, r in zip(ru_test_sents, ru_test_results):
+#         print(ru_p(s)[0])
+#         assert repr(ru_p(s)) == r
+
+
+# if __name__=="__main__":
+#     test_en_pattern_detector()
+#     print()
+#     test_ru_pattern_detector()

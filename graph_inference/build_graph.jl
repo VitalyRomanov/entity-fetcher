@@ -18,7 +18,7 @@ PATTERN_NEIGH_TYPE = "pattern_neighbour"
 
 function build_graph()
 
-    en_lemm = LanguageTools.load("en_lemma.dict")
+    # en_lemm = LanguageTools.load("en_lemma.dict")
 
     # if isfile(PARKING_LOT)
     #     parking_lot = open(PARKING_LOT, "a")
@@ -42,12 +42,14 @@ function build_graph()
 
 
     function get_super(pattern)
-        return pattern["super"]["candidates"][1]
+        # return pattern["super"]["candidates"][1]
+        return pattern["super"][1]
     end
 
 
     function get_sub(pattern)
-        return [sub["candidates"][1] for sub in pattern["sub"]]
+        return [sub[1] for sub in pattern["sub"]]
+        # return [sub["candidates"][1] for sub in pattern["sub"]]
         # return vcat(pattern["sub"]...)
     end
 
@@ -67,7 +69,7 @@ function build_graph()
     end
 
     add_and_count_edge_with_type!(graph, node1, node2, type) = begin
-        edge = [node1, node2]
+        edge = (node1, node2)
         if add_edge!(graph, edge)
             graph[edge, "count"] = 1
             graph[edge, "type"] = type
@@ -114,7 +116,7 @@ function build_graph()
         end
 
         count = count + 1
-        if count % 1 == 0
+        if count % 10000 == 0
             println("$(Dates.now()) Processed $count facts")
         end
     end
@@ -124,6 +126,6 @@ function build_graph()
     return graph
 end
 
-build_graph()
+# build_graph()
 
 

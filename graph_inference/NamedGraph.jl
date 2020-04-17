@@ -62,8 +62,8 @@ function add_node!(graph::NamedGraph, node_name, props::Dict)
 end
 
 
-import LightGraphs.SimpleGraphs.add_edge!
-function add_edge!(graph::NamedGraph, edge::Array)
+# import LightGraphs.SimpleGraphs.add_edge!
+function LightGraphs.SimpleGraphs.add_edge!(graph::NamedGraph, edge::Array)
     node_id1 = graph.index[edge[1]]
     node_id2 = graph.index[edge[2]]
     e = Edge(node_id1, node_id2)
@@ -75,7 +75,7 @@ function add_edge!(graph::NamedGraph, edge::Array)
     end
 end
 
-function add_edge!(graph::NamedGraph, edge::Array, props::Dict)
+function LightGraphs.SimpleGraphs.add_edge!(graph::NamedGraph, edge::Array, props::Dict)
     added = add_edge!(graph, edge)
     node_id1 = graph.index[edge[1]]
     node_id2 = graph.index[edge[2]]
@@ -88,8 +88,8 @@ function add_edge!(graph::NamedGraph, edge::Array, props::Dict)
     end
 end
 
-import MetaGraphs.props
-function props(graph::NamedGraph, node_key)
+# import MetaGraphs.props
+function MetaGraphs.props(graph::NamedGraph, node_key)
     node_id = graph.index[node_key]
     return props(graph.mgraph, node_id)
 end
@@ -101,6 +101,11 @@ function props(graph::NamedGraph, edge::Array)
     e = Edge(node_id1, node_id2)
 
     return props(graph.mgraph, e)
+end
+
+function Base.getindex(graph::NamedGraph, node_key::Any)
+    node_id = graph.index[node_key]
+    return props(graph.mgraph, node_id)
 end
 
 function Base.in(node, graph::NamedGraph)

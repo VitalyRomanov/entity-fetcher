@@ -123,5 +123,7 @@ function build_graph()
     # close(parking_lot)
     return graph
 end
-# build_graph()
+
+build_graph()
+
 

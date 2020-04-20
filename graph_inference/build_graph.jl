@@ -42,14 +42,14 @@ function build_graph()
 
 
     function get_super(pattern)
-        # return pattern["super"]["candidates"][1]
-        return pattern["super"][1]
+        return pattern["super"]["candidates"][1]
+        # return pattern["super"][1]
     end
 
 
     function get_sub(pattern)
-        return [sub[1] for sub in pattern["sub"]]
-        # return [sub["candidates"][1] for sub in pattern["sub"]]
+        # return [sub[1] for sub in pattern["sub"]]
+        return [sub["candidates"][1] for sub in pattern["sub"]]
         # return vcat(pattern["sub"]...)
     end
 
@@ -84,6 +84,8 @@ function build_graph()
 
     println("Begin")
 
+    # in_file = open("/home/ltv/data/local_run/entity-fetcher/c.txt")
+    # for line in eachline(in_file)
     for line in eachline(stdin)
 
         if length(strip(line)) > 0
@@ -106,7 +108,7 @@ function build_graph()
                 end
 
                 for concept in sub_c, neigh in sub_c
-                    if concept != neigh 
+                    if concept != neigh
                         add_and_count_edge_with_type!(graph, concept, neigh, PATTERN_NEIGH_TYPE)
                     end
                 end
@@ -127,5 +129,3 @@ function build_graph()
 end
 
 # build_graph()
-
-

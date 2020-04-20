@@ -6,7 +6,7 @@ struct NamedGraph
     inv_index::Dict
 end
 
-NamedGraph() = begin 
+NamedGraph() = begin
     NamedGraph(MetaDiGraph(), Dict(), Dict())
 end
 
@@ -120,16 +120,16 @@ end
 function decode_edge(graph, edge_src, edge_dst)
     return merge(
         Dict(
-            :src => graph.inv_index[edge_src], 
+            :src => graph.inv_index[edge_src],
             :dst => graph.inv_index[edge_dst]
-            ), 
+            ),
         MetaGraphs.props(
             graph.mgraph, Edge(edge_src, edge_dst)
         )
     )
 end
 
-function edges(graph::NamedGraph) 
+function edges(graph::NamedGraph)
     function decode_edge(edge)
         return merge(Dict(:src => graph.inv_index[edge.src], :dst => graph.inv_index[edge.dst]), MetaGraphs.props(graph.mgraph, edge))
     end
@@ -142,6 +142,12 @@ function outneighbors(graph::NamedGraph, node_key)
     return (graph.inv_index[node] for node in MetaGraphs.outneighbors(graph.mgraph, node_id))
 end
 
+function MetaGraphs.inneighbors(graph::NamedGraph, node_key)
+    node_id = graph.index[node_key]
+
+    return (graph.inv_index[node] for node in MetaGraphs.inneighbors(graph.mgraph, node_id))
+end
+
 function outedges(graph::NamedGraph, node_key)
     node_id = graph.index[node_key]
     neighborhood = MetaGraphs.outneighbors(graph.mgraph, node_id)
@@ -149,9 +155,16 @@ function outedges(graph::NamedGraph, node_key)
     (decode_edge(graph, node_id, n) for n in neighborhood)
 end
 
+function inedges(graph::NamedGraph, node_key)
+    node_id = graph.index[node_key]
+    neighborhood = MetaGraphs.inneighbors(graph.mgraph, node_id)
+
+    (decode_edge(graph, n, node_id) for n in neighborhood)
+end
+
 function induced_subgraph(graph::NamedGraph, nodes::Array)
     query_nodes = [graph.index[n] for n in nodes]
-    
+
     subgraph, vmap = MetaGraphs.induced_subgraph(graph.mgraph, query_nodes)
 
     sub_index = Dict()

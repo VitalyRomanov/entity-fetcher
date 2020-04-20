@@ -1,5 +1,7 @@
 ## Promotion strategy
 
+Assign confidence to edges based on the count. Look at the correctness of the nodes with count 1,2,...,k. When edge with weight 1 is found, assign confidence c[1]. If the edge is found k times, assign confidence c[k]. This beautifully assesses confidence. Needs to be reevaluated every time the extraction process is improved.
+
 0. Normalize entities
 0.5 Disambiguate with context, with other subconcepts
 1. Unambiguous entites with high count get promoted, rest, receive a confidence score

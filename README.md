@@ -11,9 +11,26 @@ Assign confidence to edges based on the count. Look at the correctness of the no
 5. Extract links. Promote ones with high count.
 6. If there are known links inside an extracted pattern, promote low count links as well?
 
-## Merging graph
 
-Implement the following procedure
-1. For every group of supernodes, identify clusters of subconcepts. 
-2. For each cluster create a prototype super concept.
-3. Superconcepts probably were mentioned as subconcepts. Identify the best match between prototypes as "super" and as "sub" concepts using vectors. Need to set a threshold
+### Given:
+List of edges: concepts connected to their respective super concepts. Characteristics of edges:
+1. Super-concepts are ambiguous
+2. Some super-concepts can appear as sub-concepts
+3. The graph is drastically underpopulated
+4. Confidence intervals on the majority of data are low
+
+What does not work reliably: 
+- word vectors
+- because graph is unpopulated, a better candidate for links can appear in the future 
+
+### Need to do:
+Resolve ambiguities in graph.
+
+### Thoughts:
+1. Some ambiguity can be removed by analyzing the highly connected super-concepts. We can cluster sub-concepts and see which of them form groups. The default strategy is: 
+    - assume there are as many uniques super-concepts as given in the edges
+    - merge super-concepts based on the co-occurrence of sub-concepts in the hearst patterns
+    - look at sub-concepts of highly connected super-concepts, collect information about dependant verbs and adjectives
+    - characterize the connected super-concepts using these words
+    - do the same for low frequency and sparsely connected nodes. identify whether these are similar to any of aggregated concepts (requires classifier)
+2. When there is a sub-concept identical to super-concept, try ot identify context where it appears as sub-concept. If the context matches (use the same classifier as above) with one of the candidates, connect them (need to train carefully). 

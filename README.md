@@ -27,6 +27,9 @@ What does not work reliably:
 Resolve ambiguities in graph.
 
 ### Thoughts:
+Thefirst point can actually all fail if these concepts also have multiple meanings... then all of this is pretty much meaningless
+The second point dependes highly on the first...
+It seems we will come to the original problem where it is hard to identify how many meanigns a word has for certain. 
 1. Some ambiguity can be removed by analyzing the highly connected super-concepts. We can cluster sub-concepts and see which of them form groups. The default strategy is: 
     - assume there are as many uniques super-concepts as given in the edges
     - merge super-concepts based on the co-occurrence of sub-concepts in the hearst patterns
@@ -34,3 +37,4 @@ Resolve ambiguities in graph.
     - characterize the connected super-concepts using these words
     - do the same for low frequency and sparsely connected nodes. identify whether these are similar to any of aggregated concepts (requires classifier)
 2. When there is a sub-concept identical to super-concept, try ot identify context where it appears as sub-concept. If the context matches (use the same classifier as above) with one of the candidates, connect them (need to train carefully). 
+3. Maybe do something similar to 1, but collect ommon words for sub-concepts and for spuer-concepts. Try to match then on each other. 

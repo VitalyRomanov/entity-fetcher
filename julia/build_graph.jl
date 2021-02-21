@@ -44,20 +44,21 @@ end
 
 
 function is_ambiguous(pattern)
-    if length(pattern["super"]) > 1 || any(length(sub) > 1 for sub in pattern["sub"])
-        return true
-    end
+    # if length(pattern["super"]) > 1 || any(length(sub) > 1 for sub in pattern["sub"])
+    #     return true
+    # end
     return false
 end
 
 
 function get_super(pattern)
-    return pattern["super"]
+    return pattern["super"]["candidates"][1]
 end
 
 
 function get_sub(pattern)
-    return vcat(pattern["sub"]...)
+    return [sub["candidates"][1] for sub in pattern["sub"]]
+    # return vcat(pattern["sub"]...)
 end
 
 
@@ -96,6 +97,8 @@ end
 
 count = 0
 
+println("Begin")
+
 for line in eachline(stdin)
 
     if length(strip(line)) > 0
@@ -103,19 +106,23 @@ for line in eachline(stdin)
 
         if is_ambiguous(pattern)
             # write(parking_lot, "$line\n")
+            println("A")
             nothing
         else
-            sup = get_super(pattern)[1]
-            sup_normal_form = normalize(sup)
+            sup = get_super(pattern)
+            # sup_normal_form = normalize(sup)
 
             add_node!(graph, sup)
-            add_node!(graph, sup_normal_form)
+            # add_node!(graph, sup_normal_form)
 
-            if sup != sup_normal_form
-                add_new_edge!(graph, (sup, sup_normal_form), NORMAL_TYPE)
-            end
+            # if sup != sup_normal_form
+            #     add_new_edge!(graph, (sup, sup_normal_form), NORMAL_TYPE)
+            # end
 
             sub_c = get_sub(pattern)
+
+            println(sup, sub_c)
+            continue
 
             for concept in sub_c
                 normal_form = normalize(concept)
@@ -143,7 +150,7 @@ for line in eachline(stdin)
     end
 
     count = count + 1
-    if count % 5000 == 0
+    if count % 1 == 0
         println("$(Dates.now()) Processed $count facts")
     end
 end
@@ -152,6 +159,8 @@ end
 close(parking_lot)
 return graph
 end
+build_graph()
+
 #@save GRAPH graph
 # JLD.save(GRAPH, "graph", graph, compress=false)
 # exit()

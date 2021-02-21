@@ -1,3 +1,4 @@
+import logging
 from typing import List, Set, Tuple
 from nltk.tokenize import word_tokenize
 from nltk.data import load
@@ -8,16 +9,24 @@ from nltk import RegexpTokenizer
 from nltk.chunk import tree2conlltags
 import pymorphy2
 
+
+
 from copy import copy
 
-from PatternDetector import en_keywords, ru_keywords
+# from PatternDetector import en_keywords, ru_keywords
 
-never_part_of_NP = set(
-    ["which", "thing", "many", "several", "few", "multiple", "all", "“", "”", "alike", "’", "–", "—", "overall", "this",
-     "‘"])
-never_part_of_NP_ru = set(["различные", "различных", "различным", "различными"])
-help_avoiding_NP_ru = ['на', 'качестве', 'том', 'числе', 'под', 'руководством', 'т.', 'д.', 'п.']
-help_avoiding_NP_en = ['Dr', 'dr', 'kind', 'of', 'etc']
+class NpEnExceptions:
+    help_avoiding_NP = {'Dr', 'dr', 'kind', 'of', 'etc'}
+    exceptions_ = {"which", "thing", "many", "several", "few", "multiple", "all", "“", "”", "alike", "’", "–", "—",
+                  "overall", "this", "‘"}
+    keywords = help_avoiding_NP | exceptions_
+
+class NpRuExceptions:
+    help_avoiding_NP = {'на', 'качестве', 'том', 'числе', 'под', 'руководством', 'т.', 'д.', 'п.'}
+    exceptions_ = {"различные", "различных", "различным", "различными"}
+    keywords = help_avoiding_NP | exceptions_
+
+
 key_tokens = set(["'s", "of", "in", "with", "for", "on", "over", "throughout"])
 key_tokens.update(en_keywords)
 key_tokens.update(ru_keywords)
@@ -26,35 +35,7 @@ key_tokens.update(never_part_of_NP_ru)
 key_tokens.update(help_avoiding_NP_ru)
 key_tokens.update(help_avoiding_NP_en)
 
-en_grammar = r"""
-        # NP:
-        #     {<DET>?<NOUN|ADJ><NOUN|ADJ|'s|of|in|with|for|on|over|throughout>*<NOUN>}
-        SRV_kind_of:
-            {<.*_kind><.*_of>}
-        SRV_such_as:
-            {<.*_such><.*_as>}
-        SRV_and_other:
-            {<.*_and><.*_other>}
-        NP_name:
-            {<.*_dr><\.>?<NOUN>*}
-        NP:
-            {<DET>?<NOUN|ADJ|.*_'s>*<NOUN>}
-        NP_of:
-            {<NP><.*_of><NP>}
-        NP_in:
-            {<NP><.*_in><NP>}
-        NP_with:
-            {<NP><.*_with><NP>}
-        NP_for:
-            {<NP><.*_for><NP>}
-        NP_on:
-        # maybe this rule should only work in subconcepts
-            {<NP><.*_on><NP>}
-        NP_over:
-            {<NP><.*_over><NP>}
-        NP_throughout:
-            {<NP><.*_throughout><NP>}
-        """
+
 # TODO:
 # 3. names do not seem to parse
 # 4. and NP does not process 100% of the time
@@ -64,74 +45,7 @@ en_grammar = r"""
 # 8. Antipatterns
 
 
-ru_grammar = r"""
-        SRV_v_tom_chisle:
-            {<.*_в><.*_том><.*_числе>}
-        SRV_pod_rukovodstvom:
-            {<.*_под><.*_руководством>}
-        SRV_takie_kak:
-            {<.*_такие><.*_как>}
-        SRV_takih_kak:
-            {<.*_таких><.*_как>}
-        SRV_takimi_kak:
-            {<.*_такими><.*_как>}
-        SRV_takim_kak:
-            {<.*_таким><.*_как>}
-        SRV_i_drygiye:
-            {<.*_и><.*_другие>}
-        SRV_i_drygih:
-            {<.*_и><.*_других>}
-        SRV_i_drygimi:
-            {<.*_и><.*_другими>}
-        SRV_i_drygim:
-            {<.*_и><.*_другим>}
-        SRV_v_chasnosti:
-            {<.*_в><.*_частности.*>}
-        SRV_razlichnyh:
-            {<.*_в><.*_различны.*>}
-        SRV_t_d_p:
-            {<.*_т\.><.*_д\.|.*_п\.>}
-        NP_adj_noun: 
-            {<ADJ_nomn.*>{1,}<NOUN_nomn.*>}
-        NP_adj_noun: 
-            {<ADJ_gent.*>{1,}<NOUN_gent.*>}
-        NP_adj_noun: 
-            {<ADJ_datv.*>{1,}<NOUN_datv.*>}
-        NP_adj_noun: 
-            {<ADJ_accs.*>{1,}<NOUN_accs.*>}
-        NP_adj_noun: 
-            {<ADJ_ablt.*>{1,}<NOUN_ablt.*>}
-        NP_adj_noun: 
-            {<ADJ_loct.*>{1,}<NOUN_loct.*>}
-        NP_adj_noun: 
-            {<ADJ_accs.*>{1,}<NOUN_nomn.*>}
-        NP_noun_noun_s: 
-            {<NOUN_nomn.*>{1,}<NOUN_nomn.*>}
-        NP_noun_noun_s: 
-            {<NOUN_gent.*>{1,}<NOUN_gent.*>}
-        NP_noun_noun_s: 
-            {<NOUN_datv.*>{1,}<NOUN_datv.*>}
-        NP_noun_noun_s: 
-            {<NOUN_accs.*>{1,}<NOUN_accs.*>}
-        NP_noun_noun_s: 
-            {<NOUN_ablt.*>{1,}<NOUN_ablt.*>}
-        NP_noun_noun_s: 
-            {<NOUN_loct.*>{1,}<NOUN_loct.*>}
-        NP_noun_noun_none_s: 
-            {<NOUN_None.*>{1,}<NOUN_None.*>}
-        NP_adj_noun_q:
-            {<ADJ.*>{1,}<NOUN.*>}
-        NP_noun_noun_q:
-            {<NOUN.*>{1,}<NOUN.*>}
-        NP_noun:
-            {<NOUN.*>}
-        NP_adj:
-            {<ADJ.*>}
-        NP_at:
-            {<NP.*><.*_на><NP.*>}
-        NP_at:
-            {<NP.*><.*_в><NP.*>}
-        """
+
 
 
 def process_apostrof_s(tokens: List[str]) -> List[str]:
@@ -145,7 +59,7 @@ def process_apostrof_s(tokens: List[str]) -> List[str]:
         if ind == len(tokens) - 1:
             continue
 
-        if (token == "`" or token == "’" or token == "‘") and tokens[ind + 1] == "s":
+        if (token == "`" or token == "’" or token == "‘" or token == "'") and tokens[ind + 1] == "s":
             locations.append(ind)
 
     while locations:
@@ -157,39 +71,49 @@ def process_apostrof_s(tokens: List[str]) -> List[str]:
     return tokens
 
 
-RU_POS_FOR_EXPANSION = {'NOUN', 'ADJ'}
+class RuMorphologyExpander:
+    pos_for_expansion = {'NOUN', 'ADJ'}
+
+    def __init__(self):
+        self.morph_analyzer = pymorphy2.MorphAnalyzer()
+
+    def morph_pos_ru(self, token: str):
+        """
+        Perform morphological alalysis for a token in russian language
+        :param token:
+        :param analyzer:
+        :return:
+        """
+        token, pos = token
+        p = self.morph_analyzer.parse(token)[0]
+        gend = p.tag.gender if p.tag.gender else "None"
+        return f"{pos}_{p.tag.case}_{gend}_{p.tag.number}"
+
+    def __call__(self, sent: List[Tuple[str, str]]):
+        """
+        Replace pos tags that occur in RU_POS_FOR_EXPANSION with
+        their morphologically enriched versions.
+        :param sent: POS-tagged tokens in NLTK format
+        :param analyzer:
+        :return:
+        """
+        for ind in range(len(sent)):
+            token, pos = sent[ind]
+            if pos in self.pos_for_expansion:
+                sent[ind] = (token, self.morph_pos_ru(sent[ind]))
+
+        return sent
 
 
-def morph_pos_ru(token: str,
-                 analyzer: pymorphy2.MorphAnalyzer):
-    """
-    Perform morphological alalysis for a token in russian language
-    :param token:
-    :param analyzer:
-    :return:
-    """
-    token, pos = token
-    p = analyzer.parse(token)[0]
-    gend = p.tag.gender if p.tag.gender else "None"
-    return f"{pos}_{p.tag.case}_{gend}_{p.tag.number}"
+class CharSets:
+    punkt = set("[-!\"#$%&'()*+,/:;<=>?@[\]^_`{|}~—»«“”„….]")
 
-
-def rus_analyze_morph(sent: List[Tuple[str, str]],
-                      analyzer: pymorphy2.MorphAnalyzer):
-    """
-    Replace pos tags that occur in RU_POS_FOR_EXPANSION with
-    their morphologically enriched versions.
-    :param sent: POS-tagged tokens in NLTK format
-    :param analyzer:
-    :return:
-    """
-    for ind in range(len(sent)):
-        token, pos = sent[ind]
-        if pos in RU_POS_FOR_EXPANSION:
-            sent[ind] = (token, morph_pos_ru(sent[ind], analyzer))
-
-    return sent
-
+def simple_pos_fix(tags):
+    for ind, tag in enumerate(tags):
+        if len(tag[0]) == 1 and tag[0] in CharSets.punkt:
+            if tag[1] != ".":
+                tags[ind] = (tag[0], ".")
+    return tags
 
 class NltkWrapper:
     def __init__(self, language):
@@ -198,13 +122,12 @@ class NltkWrapper:
         if language == 'en':
             self.lang_name = 'english'
             self.tagger_lang = 'eng'
-            grammar = en_grammar
-            self.morph_analyzer = None
+            grammar = None
         elif language == 'ru':
             self.lang_name = 'russian'
             self.tagger_lang = 'rus'
-            grammar = ru_grammar
-            self.morph_analyzer = pymorphy2.MorphAnalyzer()
+            grammar = None
+            self.morph_expander = RuMorphologyExpander()
         else:
             raise NotImplemented(f"Language '{language}' is not supported")
 
@@ -212,11 +135,37 @@ class NltkWrapper:
         self.sent_tokenizer = load('tokenizers/punkt/{0}.pickle'.format(self.lang_name))
         self.tagger = _get_tagger(self.tagger_lang)
         # Load grammar parser
-        self.grammar_parser = RegexpParser(grammar)
+        self.create_noun_chunk_grammar_parser(grammar)
 
         self.tokenizer = RegexpTokenizer(
-            "[a-z]+[:.].*?(?=\s)|[A-Za-zА-Яа-яё]\.|[A-Za-zА-Яа-яё][A-Za-zА-Яа-яё-]*|[^\w\s]|[0-9]+"
+            # "[a-z]+[:.].*?(?=\s)|[A-Za-zА-Яа-яё]\.|[A-Za-zА-Яа-яё][A-Za-zА-Яа-яё-]*|[^\w\s]|[0-9]+"
+            # "[A-Za-zА-Яа-яё]\.|[A-Za-zА-Яа-яё]+-[A-Za-zА-Яа-яё]+|[A-Za-zА-Яа-яё]+|[^\w\s]|[0-9]+"
+            "\w\.|\w+-\w+|\w+|[^\w\s]|[0-9]+"
         )
+
+    def init_noun_chunk(self, grammar):
+        if grammar is not None:
+            self.noun_chunk_parser = RegexpParser(grammar)
+        else:
+            self.noun_chunk_parser = None
+
+    def create_grammar_parser(self, grammars):
+        if grammars is not None:
+            self.grammar_parsers = [RegexpParser(grammar) for grammar in grammars]
+        else:
+            self.grammar_parsers = None
+
+    def parse_with_grammars(self, token_tags):
+        # add special proprocessing here
+        # for ind, tag in enumerate(tags):
+        #     if tag[0].lower() in key_tokens:
+        #         tags[ind] = (tags[ind][0], tags[ind][1] + "_" + tags[ind][0].lower())
+
+        parsed = token_tags
+        for parser in self.grammar_parsers:
+            parsed = parser.parse(parsed)
+
+        return parsed
 
     def sentencize(self, text):
         return self.sent_tokenizer.tokenize(text)
@@ -226,10 +175,11 @@ class NltkWrapper:
         tokens = process_apostrof_s(tokens)
         return tokens
 
-    def tag(self, tokens, tagset='universal', lang=None):
+    def tag(self, tokens, tagset='universal'):
         tags = _pos_tag(tokens, tagset, self.tagger, self.tagger_lang)
+        tags = simple_pos_fix(tags)  # hot fix for some punctuation being labeled incorrectly
         if self.lang_code == "ru":
-            tags = rus_analyze_morph(tags, self.morph_analyzer)
+            tags = self.morph_expander(tags)
         return tags
 
     def __call__(self, text):
@@ -238,14 +188,25 @@ class NltkWrapper:
         tags = [self.tag(t_sent) for t_sent in t_sents]
         return tags
 
-    def noun_chunks(self, sentence_text):
-        t_sent = self.tokenize(sentence_text)
-        tags = self.tag(t_sent)
-        for ind, tag in enumerate(tags):
-            if tag[0].lower() in key_tokens:
-                tags[ind] = (tags[ind][0], tags[ind][1] + "_" + tags[ind][0].lower())
+    def noun_chunks(self, text=None, tokens=None, parse_chunks=True):
+        if tokens is None:
+            tokens = self.tokenize(text)
+        tags = self.tag(tokens)
 
-        return self.grammar_parser.parse(tags)
+        if parse_chunks:
+            if self.noun_chunk_parser is not None:
+                tags = self.noun_chunk_parser.parse(tags)
+            else:
+                logging.warning("Chunker grammar is not defined")
+        return tags
+
+    def parse_with_grammars(self, text=None, tokens=None):
+        if tokens is None:
+            tokens = self.noun_chunks(text)
+
+
+
+
 
 
 if __name__ == "__main__":

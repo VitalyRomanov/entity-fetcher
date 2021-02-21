@@ -1,27 +1,20 @@
-from PatternDetector import PatternDetector
-
-from PatternDetector import ru_grammar, ru_keywords, ru_patterns
-from PatternDetector import en_grammar, en_keywords, en_patterns
-
-from PatternDetector import pattern_map
-
-from nltk.tag.util import untag
+from fetcher.PatternDetector import PatternDetector, PatternDescriptors
 
 from nltk import Tree
 
-from PhraseNormalizer import PhraseNormalizer
+from fetcher.PhraseNormalizer import PhraseNormalizer
 
 # TODO
 # 1. Filter terms that definitely cannot be concepts
 # 2. " ".join is known to be slow
 
-articles = set(["a", "the"])
+articles = {"a", "the"}
 
 class HyponymDetector:
 
     def __init__(self, lang):
-        self.pattern_map = pattern_map
-        self.pattern_detector = PatternDetector(lang, backend='nltk')
+        self.pattern_map = PatternDescriptors.map
+        self.pattern_detector = PatternDetector(lang)
         self._morph = None
 
         self.normalize = PhraseNormalizer(lang)

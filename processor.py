@@ -1,10 +1,57 @@
 import sys
 import argparse
 from collections import Counter
+from itertools import chain
+
+from py2neo import Graph
+
 from fetcher.HyponymExtractor import HyponymDetector
 from LanguageTools.wrappers.nltk_wrapper import Sentencizer
 import hashlib
 import json
+
+from fetcher.datamodel import Sentence, HearstPattern, Concept
+
+
+def create_candidates(candidates, mentioned_in):
+    candidates = [Concept(type=candidates["type"], name=name, mentioned_in=mentioned_in) for name in
+              candidates["candidates"]]
+
+    for c1 in candidates:
+        for c2 in candidates:
+            if c1 is c2:
+                continue
+            c1.conflicting_with.add(c2)
+
+    return candidates
+
+
+def create_pattern(pattern, sent):
+    g_pattern = HearstPattern(type=pattern["type"])
+
+    super_candidates = create_candidates(pattern["super"], sent)
+
+    sub_candidates = []
+    for sub in pattern["sub"]:
+        sub_candidates.extend(create_candidates(sub, sent))
+
+    for sup in super_candidates:
+        for sub in sub_candidates:
+            g_pattern.sub_candidates.add(sub)
+            sub.is_a.add(sup)
+
+    for sup in super_candidates:
+        g_pattern.super_candidates.add(sup)
+
+    for sub in sub_candidates:
+        g_pattern.sub_candidates.add(sub)
+
+
+    # subgraph = g_pattern
+    # for node in chain(super_candidates, sub_candidates):
+    #     subgraph = subgraph | node
+
+    return g_pattern
 
 
 def main():
@@ -37,6 +84,8 @@ def main():
         'P7':open("concepts_p7.txt", "w")
     }
 
+    graph = Graph("bolt://neo4j@localhost:7687", password="d74paj2c")
+
     sentense_bank = open("sentense_bank.txt", "w")
     recorded_sentences = set()
 
@@ -52,7 +101,7 @@ def main():
 
 
     def lowercase_first(sentence):
-        if len(sentence)>1 and sentence[1].lower() == sentence[1]:
+        if len(sentence) > 1 and sentence[1].lower() == sentence[1]:
             return sentence[0].lower() + sentence[1:]
         else:
             return sentence
@@ -76,9 +125,14 @@ def main():
                         "sent_id": sentence_id(s),
                         "text": s
                     }
+                    g_sent = Sentence(id=sentence_id(s), content=s)
+
                     sentense_bank.write("%s\n" % json.dumps(sentence_record, ensure_ascii=False))
                     recorded_sentences.add(sentence_id)
                     for c in candidates:
+
+                        subgraph = create_pattern(c, g_sent)
+                        graph.merge(subgraph)
 
                         c['sent_id'] = sentence_record['sent_id']
                         dump_files[c['type'][:2]].write("%s\n" % json.dumps(c, ensure_ascii=False))

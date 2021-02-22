@@ -13,6 +13,10 @@ import json
 from fetcher.datamodel import Sentence, HearstPattern, Concept
 
 
+def pattern_id(pattern):
+    return hashlib.md5(repr(pattern).encode('utf-8')).hexdigest()
+
+
 def create_candidates(candidates, mentioned_in):
     candidates = [Concept(type=candidates["type"], name=name, mentioned_in=mentioned_in) for name in
               candidates["candidates"]]
@@ -27,7 +31,7 @@ def create_candidates(candidates, mentioned_in):
 
 
 def create_pattern(pattern, sent):
-    g_pattern = HearstPattern(type=pattern["type"])
+    g_pattern = HearstPattern(id=pattern_id(pattern), type=pattern["type"])
 
     super_candidates = create_candidates(pattern["super"], sent)
 
@@ -57,6 +61,7 @@ def create_pattern(pattern, sent):
 def main():
     parser = argparse.ArgumentParser(description='Train word vectors')
     parser.add_argument('language', type=str, default='en', help='Language: English or Russian')
+    parser.add_argument('--password', "-p", dest="password", type=str, default='', help='')
     args = parser.parse_args()
 
     if args.language == 'en':
@@ -84,7 +89,7 @@ def main():
         'P7':open("concepts_p7.txt", "w")
     }
 
-    graph = Graph("bolt://neo4j@localhost:7687", password="d74paj2c")
+    graph = Graph("bolt://neo4j@localhost:7687", password=args.password)
 
     sentense_bank = open("sentense_bank.txt", "w")
     recorded_sentences = set()

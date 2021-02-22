@@ -36,12 +36,14 @@ class Concept(GraphObject):
         self.mentioned_in.add(mentioned_in)
 
 class HearstPattern(GraphObject):
-    # TODO
-    #  how to ensure uniqueness
+    __primarykey__ = "id"
+
+    id = Property()
     type = Property()
     super_candidates = RelatedTo(Concept, "SUPER")
     sub_candidates = RelatedTo(Concept, "SUB")
 
-    def __init__(self, type):
+    def __init__(self, id, type):
+        self.id = id
         self.type = type
 

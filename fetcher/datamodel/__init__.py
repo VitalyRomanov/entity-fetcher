@@ -28,12 +28,12 @@ class Concept(GraphObject):
     mentioned_in = RelatedTo(Sentence, "MENTIONED_IN")
     conflicting_with = Related("Concept", "CONFLICT")
 
-    def __init__(self, name, type, mentioned_in):
+    def __init__(self, name, type, mentioned_in=None):
         self.name = name
         self.type = type
         self.disambiguated = False
 
-        self.mentioned_in.add(mentioned_in)
+        # self.mentioned_in.add(mentioned_in)
 
 class HearstPattern(GraphObject):
     __primarykey__ = "id"

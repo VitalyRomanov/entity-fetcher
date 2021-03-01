@@ -4,6 +4,7 @@ from collections import Counter
 from itertools import chain
 
 from py2neo import Graph
+from py2neo.ogm import Repository
 
 from fetcher.HyponymExtractor import HyponymDetector
 from LanguageTools.wrappers.nltk_wrapper import Sentencizer
@@ -17,9 +18,20 @@ def pattern_id(pattern):
     return hashlib.md5(repr(pattern).encode('utf-8')).hexdigest()
 
 
-def create_candidates(candidates, mentioned_in):
-    candidates = [Concept(type=candidates["type"], name=name, mentioned_in=mentioned_in) for name in
-              candidates["candidates"]]
+def create_candidates(graph, candidates, mentioned_in):
+    cand = []
+
+    for name in candidates["candidates"]:
+        c = graph.get(Concept, primary_value=name)
+        if c is None:
+            c = Concept(type=candidates["type"], name=name)
+        c.mentioned_in.add(mentioned_in)
+        cand.append(c)
+
+
+    candidates = cand
+    # candidates = [Concept(type=candidates["type"], name=name, mentioned_in=mentioned_in) for name in
+    #           candidates["candidates"]]
 
     for c1 in candidates:
         for c2 in candidates:
@@ -30,14 +42,14 @@ def create_candidates(candidates, mentioned_in):
     return candidates
 
 
-def create_pattern(pattern, sent):
+def create_pattern(graph, pattern, sent):
     g_pattern = HearstPattern(id=pattern_id(pattern), type=pattern["type"])
 
-    super_candidates = create_candidates(pattern["super"], sent)
+    super_candidates = create_candidates(graph, pattern["super"], sent)
 
     sub_candidates = []
     for sub in pattern["sub"]:
-        sub_candidates.extend(create_candidates(sub, sent))
+        sub_candidates.extend(create_candidates(graph, sub, sent))
 
     for sup in super_candidates:
         for sub in sub_candidates:
@@ -55,7 +67,7 @@ def create_pattern(pattern, sent):
     # for node in chain(super_candidates, sub_candidates):
     #     subgraph = subgraph | node
 
-    return g_pattern
+    return g_pattern, super_candidates, sub_candidates
 
 
 def main():
@@ -89,7 +101,8 @@ def main():
         'P7':open("concepts_p7.txt", "w")
     }
 
-    graph = Graph("bolt://neo4j@localhost:7687", password=args.password)
+    # graph = Graph("bolt://neo4j@localhost:7687", password=args.password)
+    graph = Repository("bolt://neo4j@localhost:7687", password=args.password)
 
     sentense_bank = open("sentense_bank.txt", "w")
     recorded_sentences = set()
@@ -136,8 +149,8 @@ def main():
                     recorded_sentences.add(sentence_id)
                     for c in candidates:
 
-                        subgraph = create_pattern(c, g_sent)
-                        graph.merge(subgraph)
+                        pattern, super_c, sub_c = create_pattern(graph, c, g_sent)
+                        graph.save(g_sent, pattern, *super_c, *sub_c)
 
                         c['sent_id'] = sentence_record['sent_id']
                         dump_files[c['type'][:2]].write("%s\n" % json.dumps(c, ensure_ascii=False))

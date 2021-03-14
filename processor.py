@@ -1,9 +1,9 @@
+import re
 import sys
 import argparse
 from collections import Counter
-from itertools import chain
 
-from py2neo import Graph
+from py2neo import Relationship
 from py2neo.ogm import Repository
 
 from fetcher.HyponymExtractor import HyponymDetector
@@ -18,14 +18,80 @@ def pattern_id(pattern):
     return hashlib.md5(repr(pattern).encode('utf-8')).hexdigest()
 
 
+def get_pre_labels(candidates, s):
+    labels = []
+    for c in candidates:
+        for match in re.finditer(c["super"]["candidates"][0], s):
+            start, stop = match.span()
+            labels.append([start, stop, "SUP"])
+            break
+        for sub in c["sub"]:
+            for match in re.finditer(sub["candidates"][0], s):
+                start, stop = match.span()
+                labels.append([start, stop, "SUB"])
+                break
+        break
+
+
+# def create_candidates(graph, candidates, mentioned_in):
+#     cand = []
+#
+#     for name in candidates["candidates"]:
+#         c = graph.get(Concept, primary_value=name)
+#         if c is None:
+#             c = Concept(type=candidates["type"], name=name)
+#         c.mentioned_in.add(mentioned_in)
+#         cand.append(c)
+#
+#
+#     candidates = cand
+#     # candidates = [Concept(type=candidates["type"], name=name, mentioned_in=mentioned_in) for name in
+#     #           candidates["candidates"]]
+#
+#     for c1 in candidates:
+#         for c2 in candidates:
+#             if c1 is c2:
+#                 continue
+#             c1.conflicting_with.add(c2)
+#
+#     return candidates
+#
+#
+# def create_pattern(graph, pattern, sent):
+#     g_pattern = HearstPattern(id=pattern_id(pattern), type=pattern["type"])
+#
+#     super_candidates = create_candidates(graph, pattern["super"], sent)
+#
+#     sub_candidates = []
+#     for sub in pattern["sub"]:
+#         sub_candidates.extend(create_candidates(graph, sub, sent))
+#
+#     for sup in super_candidates:
+#         for sub in sub_candidates:
+#             g_pattern.sub_candidates.add(sub)
+#             sub.is_a.add(sup)
+#
+#     for sup in super_candidates:
+#         g_pattern.super_candidates.add(sup)
+#
+#     for sub in sub_candidates:
+#         g_pattern.sub_candidates.add(sub)
+#
+#
+#     # subgraph = g_pattern
+#     # for node in chain(super_candidates, sub_candidates):
+#     #     subgraph = subgraph | node
+#
+#     return g_pattern, super_candidates, sub_candidates
+
+
 def create_candidates(graph, candidates, mentioned_in):
     cand = []
+    edges = []
 
     for name in candidates["candidates"]:
-        c = graph.get(Concept, primary_value=name)
-        if c is None:
-            c = Concept(type=candidates["type"], name=name)
-        c.mentioned_in.add(mentioned_in)
+        c = Concept(type=candidates["type"], name=name)
+        edges.append(Relationship(c, "mentioned_in", mentioned_in))
         cand.append(c)
 
 
@@ -37,37 +103,44 @@ def create_candidates(graph, candidates, mentioned_in):
         for c2 in candidates:
             if c1 is c2:
                 continue
-            c1.conflicting_with.add(c2)
+            edges.append(Relationship(c1, "conflicting_with", c2))
 
-    return candidates
+    return candidates, edges
 
 
 def create_pattern(graph, pattern, sent):
+    edges = []
     g_pattern = HearstPattern(id=pattern_id(pattern), type=pattern["type"])
 
-    super_candidates = create_candidates(graph, pattern["super"], sent)
+    super_candidates, edges_ = create_candidates(graph, pattern["super"], sent)
+    edges.extend(edges_)
 
     sub_candidates = []
     for sub in pattern["sub"]:
-        sub_candidates.extend(create_candidates(graph, sub, sent))
+        sub_candidates_, edges_ = create_candidates(graph, sub, sent)
+        sub_candidates.extend(sub_candidates_)
+        edges.extend(edges_)
 
     for sup in super_candidates:
         for sub in sub_candidates:
-            g_pattern.sub_candidates.add(sub)
-            sub.is_a.add(sup)
+            edges.append(Relationship(g_pattern, "sub_candidates", sub))
+            edges.append(Relationship(sub, "is_a", sup))
 
     for sup in super_candidates:
-        g_pattern.super_candidates.add(sup)
+        edges.append(Relationship(g_pattern, "super_candidates", sup))
 
     for sub in sub_candidates:
-        g_pattern.sub_candidates.add(sub)
+        edges.append(Relationship(g_pattern, "sub_candidates", sub))
 
 
-    # subgraph = g_pattern
-    # for node in chain(super_candidates, sub_candidates):
-    #     subgraph = subgraph | node
+    subgraph = None
+    for edge in edges:
+        if subgraph is None:
+            subgraph = edge
+        else:
+            subgraph = subgraph | edge
 
-    return g_pattern, super_candidates, sub_candidates
+    return subgraph
 
 
 def main():
@@ -141,16 +214,19 @@ def main():
                 if candidates:
                     sentence_record = {
                         "sent_id": sentence_id(s),
-                        "text": s
+                        "text": s,
                     }
-                    g_sent = Sentence(id=sentence_id(s), content=s)
+                    # g_sent = Sentence(id=sentence_id(s), content=s)
+
+
 
                     sentense_bank.write("%s\n" % json.dumps(sentence_record, ensure_ascii=False))
-                    recorded_sentences.add(sentence_id)
+                    # recorded_sentences.add(sentence_id)
                     for c in candidates:
 
-                        pattern, super_c, sub_c = create_pattern(graph, c, g_sent)
-                        graph.save(g_sent, pattern, *super_c, *sub_c)
+                        # subgraph = create_pattern(graph, c, g_sent)
+                        ## graph.save(g_sent, pattern, *super_c, *sub_c)
+                        # graph.merge(subgraph)
 
                         c['sent_id'] = sentence_record['sent_id']
                         dump_files[c['type'][:2]].write("%s\n" % json.dumps(c, ensure_ascii=False))
